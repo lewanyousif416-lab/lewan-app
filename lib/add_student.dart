@@ -15,6 +15,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
   final TextEditingController ageController = TextEditingController();
 
   static const List<String> educationOptions = [
+    "Twelfth grade",
     "Diploma 's Degree",
     "Bachelor's Degree",
   ];
@@ -79,10 +80,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
           backgroundColor: Colors.green,
         ),
       );
-
-      // IMPORTANT:
-      // Do NOT use Navigator.pop(context)
-      // The page stays open so you can add another student.
     } catch (e) {
       setState(() {
         isLoading = false;
@@ -111,8 +108,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
         title: const Text("Add Student"),
         backgroundColor: const Color(0xFF673AB7),
         foregroundColor: Colors.white,
-
-        // Back button still works when YOU want to leave the page
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -120,7 +115,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
           },
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
