@@ -9,7 +9,7 @@ class TotalStudentsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Total Students"),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
       ),
 
       body: StreamBuilder<QuerySnapshot>(
@@ -34,7 +34,11 @@ class TotalStudentsPage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.groups, size: 80, color: Colors.blue),
+                    const Icon(
+                      Icons.groups,
+                      size: 80,
+                      color: Color(0xFF673AB7),
+                    ),
 
                     const SizedBox(height: 20),
 

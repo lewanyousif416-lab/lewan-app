@@ -83,14 +83,14 @@ class DashboardPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Dashboard"),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
       ),
 
       drawer: Drawer(
         child: ListView(
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFF1B263B)),
+              decoration: BoxDecoration(color: Color(0xFF673AB7)),
               child: Center(
                 child: Text(
                   "Information",
@@ -230,7 +230,7 @@ class DashboardPage extends StatelessWidget {
 
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: const Color(0xFF673AB7),
                       child: Text(student["name"][0].toUpperCase()),
                     ),
 

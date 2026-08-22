@@ -39,7 +39,7 @@ class AttendanceMonthsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Attendance - 2026"),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
         centerTitle: true,
       ),
 
@@ -80,7 +80,7 @@ class AttendanceMonthsPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF1B263B), Color(0xFF415A77)],
+                    colors: [Color(0xFF673AB7), Color(0xFF9575CD)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -133,7 +133,7 @@ class AttendanceMonthsPage extends StatelessWidget {
                       child: Text(
                         "${fridayCount[index]} Fridays",
                         style: const TextStyle(
-                          color: Color(0xFF1B263B),
+                          color: Color(0xFF673AB7),
                           fontWeight: FontWeight.bold,
                         ),
                       ),

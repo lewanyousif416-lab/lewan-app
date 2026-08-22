@@ -16,16 +16,9 @@ class ActivityDetailPage extends StatefulWidget {
 }
 
 class _ActivityDetailPageState extends State<ActivityDetailPage> {
-  final Map<String, TextEditingController> _gradeControllers = {};
+  // studentId -> selected answer ("yes" / "no" / null if not chosen yet)
+  final Map<String, String?> _gradeAnswers = {};
   bool isSaving = false;
-
-  @override
-  void dispose() {
-    for (var controller in _gradeControllers.values) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
 
   Future<void> saveGrades(List<QueryDocumentSnapshot> students) async {
     setState(() => isSaving = true);
@@ -34,10 +27,8 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
       for (var student in students) {
         final studentId = student.id;
-        final controller = _gradeControllers[studentId];
-        if (controller != null && controller.text.trim().isNotEmpty) {
-          final score = double.tryParse(controller.text.trim()) ?? 0.0;
-
+        final answer = _gradeAnswers[studentId];
+        if (answer != null) {
           final gradeRef = FirebaseFirestore.instance
               .collection('activities_list')
               .doc(widget.activityId)
@@ -50,7 +41,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                 (student.data() as Map<String, dynamic>)['name'] ?? 'Unknown',
             'activityId': widget.activityId, // Added activity ID
             'activityTitle': widget.activityTitle, // Added activity name
-            'score': score,
+            'score': answer,
             'updatedAt': FieldValue.serverTimestamp(),
           });
         }
@@ -73,10 +64,45 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
     }
   }
 
+  Widget _answerChip({
+    required String label,
+    required String value,
+    required String? currentAnswer,
+    required VoidCallback onTap,
+  }) {
+    final bool selected = currentAnswer == value;
+    final Color color = value == 'yes' ? Colors.green : Colors.red;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? color : color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color, width: selected ? 0 : 1),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : color,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.activityTitle)),
+      appBar: AppBar(
+        title: Text(widget.activityTitle),
+        backgroundColor: const Color(0xFF673AB7), // Deep Purple 500
+        foregroundColor: Colors.white,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('students').snapshots(),
         builder: (context, studentSnapshot) {
@@ -97,10 +123,12 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                 for (var gradeDoc in gradeSnapshot.data!.docs) {
                   final data = gradeDoc.data() as Map<String, dynamic>;
                   final studentId = gradeDoc.id;
-                  if (!_gradeControllers.containsKey(studentId)) {
-                    _gradeControllers[studentId] = TextEditingController(
-                      text: data['score']?.toString() ?? '',
-                    );
+                  if (!_gradeAnswers.containsKey(studentId)) {
+                    final existing = data['score'];
+                    _gradeAnswers[studentId] =
+                        (existing == 'yes' || existing == 'no')
+                        ? existing as String
+                        : null;
                   }
                 }
               }
@@ -117,10 +145,8 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                         final studentId = studentDoc.id;
                         final studentName = studentData['name'] ?? 'Unnamed';
 
-                        _gradeControllers.putIfAbsent(
-                          studentId,
-                          () => TextEditingController(),
-                        );
+                        _gradeAnswers.putIfAbsent(studentId, () => null);
+                        final currentAnswer = _gradeAnswers[studentId];
 
                         return Card(
                           margin: const EdgeInsets.symmetric(
@@ -140,17 +166,29 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                                     ),
                                   ),
                                 ),
-                                SizedBox(
-                                  width: 100,
-                                  child: TextField(
-                                    controller: _gradeControllers[studentId],
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: "Score",
-                                      border: OutlineInputBorder(),
-                                      isDense: true,
+                                Row(
+                                  children: [
+                                    _answerChip(
+                                      label: "Yes",
+                                      value: "yes",
+                                      currentAnswer: currentAnswer,
+                                      onTap: () {
+                                        setState(() {
+                                          _gradeAnswers[studentId] = "yes";
+                                        });
+                                      },
                                     ),
-                                  ),
+                                    _answerChip(
+                                      label: "No",
+                                      value: "no",
+                                      currentAnswer: currentAnswer,
+                                      onTap: () {
+                                        setState(() {
+                                          _gradeAnswers[studentId] = "no";
+                                        });
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -164,6 +202,10 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF673AB7),
+                          foregroundColor: Colors.white,
+                        ),
                         onPressed: isSaving ? null : () => saveGrades(students),
                         child: isSaving
                             ? const SizedBox(

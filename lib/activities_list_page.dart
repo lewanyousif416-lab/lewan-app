@@ -59,7 +59,11 @@ class ActivitiesListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Activities")),
+      appBar: AppBar(
+        title: const Text("Activities"),
+        backgroundColor: const Color(0xFF673AB7), // Deep Purple 500
+        foregroundColor: Colors.white,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('activities_list')
@@ -102,7 +106,7 @@ class ActivitiesListPage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.grey.shade200,
                       border: Border.all(
-                        color: Colors.deepPurple,
+                        color: const Color(0xFF673AB7),
                         style: BorderStyle.solid,
                         width: 2,
                       ),
@@ -114,14 +118,14 @@ class ActivitiesListPage extends StatelessWidget {
                         Icon(
                           Icons.add_circle_outline,
                           size: 40,
-                          color: Colors.deepPurple,
+                          color: Color(0xFF673AB7),
                         ),
                         SizedBox(height: 8),
                         Text(
                           "Add New Card",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
+                            color: Color(0xFF673AB7),
                           ),
                         ),
                       ],
@@ -153,8 +157,10 @@ class ActivitiesListPage extends StatelessWidget {
                       height: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.deepPurple.shade50,
-                        border: Border.all(color: Colors.deepPurple.shade200),
+                        color: const Color(0xFF673AB7).withOpacity(0.08),
+                        border: Border.all(
+                          color: const Color(0xFF673AB7).withOpacity(0.3),
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
@@ -171,7 +177,7 @@ class ActivitiesListPage extends StatelessWidget {
                           const Icon(
                             Icons.assignment,
                             size: 32,
-                            color: Colors.deepPurple,
+                            color: Color(0xFF673AB7),
                           ),
                           const Spacer(),
                           Text(
@@ -179,7 +185,7 @@ class ActivitiesListPage extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple,
+                              color: Color(0xFF673AB7),
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -228,6 +234,10 @@ class ActivitiesListPage extends StatelessWidget {
             child: const Text("Cancel"),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF673AB7),
+              foregroundColor: Colors.white,
+            ),
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
                 // Saves the card title and initializes an empty grades array together in one document

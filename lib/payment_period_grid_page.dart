@@ -59,7 +59,7 @@ class PaymentPeriodGridPage extends StatelessWidget {
         title: Text(
           isWeekly ? "Weekly Payments - $year" : "Monthly Payments - $year",
         ),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
         centerTitle: true,
       ),
 
@@ -100,7 +100,7 @@ class PaymentPeriodGridPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF1B263B), Color(0xFF415A77)],
+                    colors: [Color(0xFF673AB7), Color(0xFF9575CD)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),

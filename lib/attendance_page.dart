@@ -249,7 +249,7 @@ class _AttendancePageState extends State<AttendancePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("${widget.monthName} $year"),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
         centerTitle: true,
       ),
       body: loadingStatuses
@@ -301,7 +301,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                     style: const TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1B263B),
+                                      color: Color(0xFF673AB7),
                                     ),
                                   ),
                                   const Divider(height: 20),
@@ -391,7 +391,7 @@ class _AttendancePageState extends State<AttendancePage> {
                           child: ElevatedButton.icon(
                             onPressed: saving ? null : () => _saveAll(students),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1B263B),
+                              backgroundColor: const Color(0xFF673AB7),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),

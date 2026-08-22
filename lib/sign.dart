@@ -74,7 +74,7 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
+      backgroundColor: const Color(0xFF311B92),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -90,7 +90,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 const Icon(
                   Icons.person_add_alt_1,
                   size: 70,
-                  color: Color(0xFF1B263B),
+                  color: Color(0xFF673AB7),
                 ),
 
                 const SizedBox(height: 20),
@@ -207,7 +207,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   child: ElevatedButton(
                     onPressed: isLoading ? null : signUp,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1B263B),
+                      backgroundColor: const Color(0xFF673AB7),
                     ),
                     child: isLoading
                         ? const CircularProgressIndicator(color: Colors.white)

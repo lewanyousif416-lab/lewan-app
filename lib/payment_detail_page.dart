@@ -136,7 +136,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
 
                             return CheckboxListTile(
                               secondary: CircleAvatar(
-                                backgroundColor: Colors.blue,
+                                backgroundColor: const Color(0xFF673AB7),
                                 child: Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : '?',
                                 ),
@@ -163,7 +163,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                           width: double.infinity,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1B263B),
+                              backgroundColor: const Color(0xFF673AB7),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -304,7 +304,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.periodLabel),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
         centerTitle: true,
         actions: [
           IconButton(
@@ -476,7 +476,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                         child: ElevatedButton.icon(
                           onPressed: saving ? null : _saveAll,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1B263B),
+                            backgroundColor: const Color(0xFF673AB7),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

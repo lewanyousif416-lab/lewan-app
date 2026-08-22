@@ -9,7 +9,7 @@ class PaymentsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Payments"),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
         centerTitle: true,
       ),
 
@@ -82,7 +82,7 @@ class _PaymentTypeCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: const LinearGradient(
-            colors: [Color(0xFF1B263B), Color(0xFF415A77)],
+            colors: [Color(0xFF673AB7), Color(0xFF9575CD)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

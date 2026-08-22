@@ -74,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
+      backgroundColor: const Color(0xFF311B92),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -98,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1B263B),
+                    color: const Color(0xFF673AB7),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -113,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1B263B),
+                    color: Color(0xFF673AB7),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -193,7 +193,7 @@ class _LoginPageState extends State<LoginPage> {
                   height: 50,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1B263B),
+                      backgroundColor: const Color(0xFF673AB7),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -228,7 +228,7 @@ class _LoginPageState extends State<LoginPage> {
                   },
                   child: const Text(
                     "Don't have an account? Sign up",
-                    style: TextStyle(color: Color(0xFF1B263B)),
+                    style: TextStyle(color: Color(0xFF673AB7)),
                   ),
                 ),
               ],

@@ -18,7 +18,7 @@ class _SearchStudentPageState extends State<SearchStudentPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Search Student"),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
       ),
 
       body: Padding(
@@ -85,7 +85,7 @@ class _SearchStudentPageState extends State<SearchStudentPage> {
 
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: const Color(0xFF673AB7),
                             child: Text(
                               student["name"][0].toUpperCase(),
                               style: const TextStyle(color: Colors.white),

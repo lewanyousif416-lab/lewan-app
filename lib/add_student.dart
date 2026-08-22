@@ -109,7 +109,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Add Student"),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
         foregroundColor: Colors.white,
 
         // Back button still works when YOU want to leave the page
@@ -228,7 +228,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
               child: ElevatedButton(
                 onPressed: isLoading ? null : saveStudent,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B263B),
+                  backgroundColor: const Color(0xFF673AB7),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
