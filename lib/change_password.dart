@@ -103,13 +103,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Change Password"),
-        backgroundColor: const Color(0xFF1B263B),
+        backgroundColor: const Color(0xFF673AB7),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Icon(Icons.lock_reset, size: 90, color: Color(0xFF1B263B)),
+            const Icon(Icons.lock_reset, size: 90, color: Color(0xFF673AB7)),
 
             const SizedBox(height: 20),
 
@@ -191,7 +191,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               child: ElevatedButton(
                 onPressed: isLoading ? null : changePassword,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B263B),
+                  backgroundColor: const Color(0xFF673AB7),
                 ),
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
