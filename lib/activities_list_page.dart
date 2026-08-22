@@ -2,15 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'activity_detail_page.dart';
 
-class ActivitiesListPage extends StatefulWidget {
+class ActivitiesListPage extends StatelessWidget {
   const ActivitiesListPage({super.key});
-
-  @override
-  State<ActivitiesListPage> createState() => _ActivitiesListPageState();
-}
-
-class _ActivitiesListPageState extends State<ActivitiesListPage> {
-  int _currentIndex = 0;
 
   Future<void> _deleteActivityCard(
     BuildContext context,
@@ -60,6 +53,81 @@ class _ActivitiesListPageState extends State<ActivitiesListPage> {
         }
       }
     }
+  }
+
+  void _showUpdateActivityDialog(
+    BuildContext context,
+    String activityId,
+    String currentTitle,
+  ) {
+    final controller = TextEditingController(text: currentTitle);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Update Activity Card"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: "Card Title",
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF673AB7),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final newTitle = controller.text.trim();
+              if (newTitle.isNotEmpty && newTitle != currentTitle) {
+                // Since Firestore document IDs can't be renamed directly,
+                // we create a new document with the new ID/title, copy data, and delete the old one.
+                final firestore = FirebaseFirestore.instance;
+                final oldDocRef = firestore
+                    .collection('activities_list')
+                    .doc(activityId);
+                final newDocRef = firestore
+                    .collection('activities_list')
+                    .doc(newTitle);
+
+                final oldDocSnapshot = await oldDocRef.get();
+                if (oldDocSnapshot.exists) {
+                  final data = oldDocSnapshot.data() as Map<String, dynamic>;
+                  data['title'] = newTitle;
+
+                  // Set data to new document ID
+                  await newDocRef.set(data);
+
+                  // Copy sub-collection 'grades' if any exist
+                  final gradesSnapshot = await oldDocRef
+                      .collection('grades')
+                      .get();
+                  for (var gradeDoc in gradesSnapshot.docs) {
+                    await newDocRef
+                        .collection('grades')
+                        .doc(gradeDoc.id)
+                        .set(gradeDoc.data());
+                  }
+
+                  // Delete old document and its sub-collection contents
+                  await oldDocRef.delete();
+                }
+
+                if (context.mounted) Navigator.pop(context);
+              } else if (context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("Update"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -212,30 +280,24 @@ class _ActivitiesListPageState extends State<ActivitiesListPage> {
                       onPressed: () => _deleteActivityCard(context, doc.id),
                     ),
                   ),
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.edit,
+                        color: Color(0xFF673AB7),
+                        size: 22,
+                      ),
+                      onPressed: () =>
+                          _showUpdateActivityDialog(context, doc.id, title),
+                    ),
+                  ),
                 ],
               );
             },
           );
         },
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFF673AB7),
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          // Add your navigation logic or page switches here based on index
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Activities"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Students"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: "Settings",
-          ),
-        ],
       ),
     );
   }
@@ -264,13 +326,15 @@ class _ActivitiesListPageState extends State<ActivitiesListPage> {
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
-              if (controller.text.trim().isNotEmpty) {
+              final titleText = controller.text.trim();
+              if (titleText.isNotEmpty) {
+                // Uses the exact text title as the Firestore Document ID
                 await FirebaseFirestore.instance
                     .collection('activities_list')
-                    .add({
-                      'title': controller.text.trim(),
+                    .doc(titleText)
+                    .set({
+                      'title': titleText,
                       'createdAt': FieldValue.serverTimestamp(),
-                      'grades': [],
                     });
                 if (context.mounted) Navigator.pop(context);
               }
