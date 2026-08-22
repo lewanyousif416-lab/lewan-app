@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'activity_detail_page.dart';
 
-class ActivitiesListPage extends StatelessWidget {
+class ActivitiesListPage extends StatefulWidget {
   const ActivitiesListPage({super.key});
+
+  @override
+  State<ActivitiesListPage> createState() => _ActivitiesListPageState();
+}
+
+class _ActivitiesListPageState extends State<ActivitiesListPage> {
+  int _currentIndex = 0;
 
   Future<void> _deleteActivityCard(
     BuildContext context,
@@ -36,7 +43,6 @@ class ActivitiesListPage extends StatelessWidget {
             .collection('activities_list')
             .doc(activityId);
 
-        // Since grades are stored inside this document, deleting the document removes everything together!
         await activityRef.delete();
 
         if (context.mounted) {
@@ -212,6 +218,25 @@ class ActivitiesListPage extends StatelessWidget {
           );
         },
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        selectedItemColor: const Color(0xFF673AB7),
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          // Add your navigation logic or page switches here based on index
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Activities"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Students"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: "Settings",
+          ),
+        ],
+      ),
     );
   }
 
@@ -240,7 +265,6 @@ class ActivitiesListPage extends StatelessWidget {
             ),
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
-                // Saves the card title and initializes an empty grades array together in one document
                 await FirebaseFirestore.instance
                     .collection('activities_list')
                     .add({
