@@ -231,7 +231,10 @@ class DashboardPage extends StatelessWidget {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: const Color(0xFF673AB7),
-                      child: Text(student["name"][0].toUpperCase()),
+                      child: Text(
+                        student["name"][0].toUpperCase(),
+                        style: const TextStyle(color: Colors.white),
+                      ),
                     ),
 
                     title: Text(student["name"]),
