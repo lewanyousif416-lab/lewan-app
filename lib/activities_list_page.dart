@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'activity_detail_page.dart';
+import 'l10n/app_localizations.dart';
 
 class ActivitiesListPage extends StatelessWidget {
   const ActivitiesListPage({super.key});
@@ -9,22 +10,24 @@ class ActivitiesListPage extends StatelessWidget {
     BuildContext context,
     String activityId,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     bool? confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete Activity Card"),
-        content: const Text(
-          "Are you sure you want to delete this card and all its records?",
-        ),
+        title: Text(l10n.deleteActivityCardTitle),
+        content: Text(l10n.deleteActivityCardContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.white)),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -39,17 +42,15 @@ class ActivitiesListPage extends StatelessWidget {
         await activityRef.delete();
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Activity Card and its records deleted"),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.activityCardDeleted)));
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text("Failed to delete: $e")));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.failedToDelete(e.toString()))),
+          );
         }
       }
     }
@@ -60,22 +61,23 @@ class ActivitiesListPage extends StatelessWidget {
     String activityId,
     String currentTitle,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: currentTitle);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Update Activity Card"),
+        title: Text(l10n.updateActivityCardTitle),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: "Card Title",
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.cardTitleLabel,
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -123,7 +125,7 @@ class ActivitiesListPage extends StatelessWidget {
                 Navigator.pop(context);
               }
             },
-            child: const Text("Update"),
+            child: Text(l10n.update),
           ),
         ],
       ),
@@ -132,9 +134,10 @@ class ActivitiesListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Activities"),
+        title: Text(l10n.activitiesTitle),
         backgroundColor: const Color(0xFF673AB7), // Deep Purple 500
         foregroundColor: Colors.white,
       ),
@@ -149,7 +152,7 @@ class ActivitiesListPage extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
-                  "Error loading data: ${snapshot.error}",
+                  l10n.errorLoadingData(snapshot.error.toString()),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.red),
                 ),
@@ -186,18 +189,18 @@ class ActivitiesListPage extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Column(
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.add_circle_outline,
                           size: 40,
                           color: Color(0xFF673AB7),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
-                          "Add New Card",
-                          style: TextStyle(
+                          l10n.addNewCard,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF673AB7),
                           ),
@@ -303,22 +306,23 @@ class ActivitiesListPage extends StatelessWidget {
   }
 
   void _showAddActivityDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Create Activity Card"),
+        title: Text(l10n.createActivityCardTitle),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: "Card Title",
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.cardTitleLabel,
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -339,7 +343,7 @@ class ActivitiesListPage extends StatelessWidget {
                 if (context.mounted) Navigator.pop(context);
               }
             },
-            child: const Text("Create"),
+            child: Text(l10n.create),
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'l10n/app_localizations.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -19,11 +20,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   bool obscureConfirm = true;
 
   Future<void> changePassword() async {
+    final l10n = AppLocalizations.of(context)!;
     if (newPasswordController.text.trim() !=
         confirmPasswordController.text.trim()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("New passwords do not match"),
+        SnackBar(
+          content: Text(l10n.newPasswordsDoNotMatch),
           backgroundColor: Colors.red,
         ),
       );
@@ -32,8 +34,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     if (newPasswordController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password must be at least 6 characters"),
+        SnackBar(
+          content: Text(l10n.passwordTooShort),
           backgroundColor: Colors.red,
         ),
       );
@@ -48,7 +50,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       User? user = FirebaseAuth.instance.currentUser;
 
       if (user == null) {
-        throw Exception("User not logged in");
+        throw Exception(l10n.userNotLoggedIn);
       }
 
       AuthCredential credential = EmailAuthProvider.credential(
@@ -65,8 +67,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password changed successfully"),
+        SnackBar(
+          content: Text(l10n.passwordChangedSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
@@ -75,7 +77,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message ?? "Failed to change password"),
+          content: Text(e.message ?? l10n.failedToChangePassword),
           backgroundColor: Colors.red,
         ),
       );
@@ -100,9 +102,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Change Password"),
+        title: Text(l10n.changePasswordTitle),
         backgroundColor: const Color(0xFF673AB7),
       ),
       body: SingleChildScrollView(
@@ -117,7 +120,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               controller: currentPasswordController,
               obscureText: obscureCurrent,
               decoration: InputDecoration(
-                labelText: "Current Password",
+                labelText: l10n.currentPasswordLabel,
                 prefixIcon: const Icon(Icons.lock),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -141,7 +144,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               controller: newPasswordController,
               obscureText: obscureNew,
               decoration: InputDecoration(
-                labelText: "New Password",
+                labelText: l10n.newPasswordLabel,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -165,7 +168,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               controller: confirmPasswordController,
               obscureText: obscureConfirm,
               decoration: InputDecoration(
-                labelText: "Confirm New Password",
+                labelText: l10n.confirmNewPasswordLabel,
                 prefixIcon: const Icon(Icons.lock_reset),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -195,9 +198,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 ),
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Change Password",
-                        style: TextStyle(color: Colors.white, fontSize: 18),
+                    : Text(
+                        l10n.changePasswordButton,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                        ),
                       ),
               ),
             ),

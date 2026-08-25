@@ -84,18 +84,6 @@ class AttendanceService {
   }
 
   // Delete ALL attendance records for one student, across every date.
-  // This is what dashboard.dart / edit_delete_student.dart should call
-  // when a student is deleted, so only that student's own records go away.
-  //
-  // NOTE: this uses a collectionGroup query on "records" rather than
-  // collection("attendance").get(). A date document like "attendance/2026-01-02"
-  // that was only ever reached through a subcollection write (i.e. nobody
-  // called .set() on the date doc itself) does NOT show up in a plain
-  // collection().get() call, so enumerating "attendance" first would silently
-  // miss dates and leave attendance behind. collectionGroup reaches every
-  // "records" subcollection directly, regardless of the parent doc's state.
-  // This requires each record to have been saved with a "studentId" field
-  // (saveAttendance above already does this).
   Future<void> deleteAllAttendanceForStudent(String studentId) async {
     final recordsSnapshot = await _firestore
         .collectionGroup('records')

@@ -10,6 +10,8 @@ import 'total_students.dart';
 import 'change_password.dart';
 import 'payments_page.dart';
 import 'activities_list_page.dart'; // Import your activities list page
+import 'l10n/app_localizations.dart';
+import 'locale_controller.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -17,6 +19,7 @@ class DashboardPage extends StatelessWidget {
   Future<void> logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
 
+    if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -28,6 +31,7 @@ class DashboardPage extends StatelessWidget {
     BuildContext context,
     String studentId,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final batch = FirebaseFirestore.instance.batch();
 
@@ -63,45 +67,45 @@ class DashboardPage extends StatelessWidget {
       await batch.commit();
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Student and all related records deleted"),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.studentAndRecordsDeleted)));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Failed to delete: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToDelete(e.toString()))),
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dashboard"),
+        title: Text(l10n.dashboardTitle),
         backgroundColor: const Color(0xFF673AB7),
+        actions: const [LanguageSwitcherAction()],
       ),
 
       drawer: Drawer(
         child: ListView(
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFF673AB7)),
+            DrawerHeader(
+              decoration: const BoxDecoration(color: Color(0xFF673AB7)),
               child: Center(
                 child: Text(
-                  "Information",
-                  style: TextStyle(color: Colors.white, fontSize: 24),
+                  l10n.informationDrawerHeader,
+                  style: const TextStyle(color: Colors.white, fontSize: 24),
                 ),
               ),
             ),
 
             ListTile(
               leading: const Icon(Icons.dashboard),
-              title: const Text("Dashboard"),
+              title: Text(l10n.dashboardTitle),
               onTap: () {
                 Navigator.pop(context);
               },
@@ -109,7 +113,7 @@ class DashboardPage extends StatelessWidget {
 
             ListTile(
               leading: const Icon(Icons.person_add),
-              title: const Text("Add Student"),
+              title: Text(l10n.addStudentDrawer),
               onTap: () {
                 Navigator.push(
                   context,
@@ -119,7 +123,7 @@ class DashboardPage extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.search),
-              title: const Text("Search Student"),
+              title: Text(l10n.searchStudentDrawer),
               onTap: () {
                 Navigator.push(
                   context,
@@ -129,7 +133,7 @@ class DashboardPage extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.groups),
-              title: const Text("Total Students"),
+              title: Text(l10n.totalStudentsDrawer),
               onTap: () {
                 Navigator.push(
                   context,
@@ -139,7 +143,7 @@ class DashboardPage extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.event_available),
-              title: const Text("Attendance"),
+              title: Text(l10n.attendanceDrawer),
               onTap: () {
                 Navigator.push(
                   context,
@@ -152,7 +156,7 @@ class DashboardPage extends StatelessWidget {
 
             ListTile(
               leading: const Icon(Icons.payments),
-              title: const Text("Payments"),
+              title: Text(l10n.paymentsDrawer),
               onTap: () {
                 Navigator.push(
                   context,
@@ -164,7 +168,7 @@ class DashboardPage extends StatelessWidget {
             // Added: ListTile to open Activities page from the drawer
             ListTile(
               leading: const Icon(Icons.assignment),
-              title: const Text("Activities"),
+              title: Text(l10n.activitiesDrawer),
               onTap: () {
                 Navigator.push(
                   context,
@@ -175,7 +179,7 @@ class DashboardPage extends StatelessWidget {
 
             ListTile(
               leading: const Icon(Icons.lock_reset),
-              title: const Text("Change Password"),
+              title: Text(l10n.changePasswordDrawer),
               onTap: () {
                 Navigator.push(
                   context,
@@ -184,9 +188,25 @@ class DashboardPage extends StatelessWidget {
               },
             ),
 
+            const Divider(),
+
+            ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(l10n.languageMenuTooltip),
+              trailing: ValueListenableBuilder<Locale>(
+                valueListenable: LocaleController.notifier,
+                builder: (context, locale, _) =>
+                    Text(locale.languageCode == 'ckb' ? 'کوردی' : 'English'),
+              ),
+              onTap: () {
+                final isKurdish = LocaleController.isKurdish;
+                LocaleController.setLocale(Locale(isKurdish ? 'en' : 'ckb'));
+              },
+            ),
+
             ListTile(
               leading: const Icon(Icons.logout),
-              title: const Text("Logout"),
+              title: Text(l10n.logoutDrawer),
               onTap: () => logout(context),
             ),
           ],
@@ -201,7 +221,7 @@ class DashboardPage extends StatelessWidget {
 
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return const Center(child: Text("Something went wrong"));
+              return Center(child: Text(l10n.somethingWentWrong));
             }
 
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -209,10 +229,10 @@ class DashboardPage extends StatelessWidget {
             }
 
             if (snapshot.data!.docs.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
-                  "No Students Found",
-                  style: TextStyle(fontSize: 20),
+                  l10n.noStudentsFoundBig,
+                  style: const TextStyle(fontSize: 20),
                 ),
               );
             }
@@ -231,10 +251,7 @@ class DashboardPage extends StatelessWidget {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: const Color(0xFF673AB7),
-                      child: Text(
-                        student["name"][0].toUpperCase(),
-                        style: const TextStyle(color: Colors.white),
-                      ),
+                      child: Text(student["name"][0].toUpperCase()),
                     ),
 
                     title: Text(student["name"]),
@@ -242,11 +259,23 @@ class DashboardPage extends StatelessWidget {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Phone: ${data["phone"] ?? '-'}"),
-                        Text("Location: ${data["location"] ?? '_'}"),
-                        Text("Age: ${data["age"] ?? '-'}"),
-                        Text("Education: ${data["education"] ?? '-'}"),
-                        Text("Status: ${data["maritalStatus"] ?? '-'}"),
+                        Text(l10n.phoneField(data["phone"]?.toString() ?? '-')),
+                        Text(
+                          l10n.locationField(
+                            data["location"]?.toString() ?? '-',
+                          ),
+                        ),
+                        Text(l10n.ageField(data["age"]?.toString() ?? '-')),
+                        Text(
+                          l10n.educationField(
+                            data["education"]?.toString() ?? '-',
+                          ),
+                        ),
+                        Text(
+                          l10n.statusField(
+                            data["maritalStatus"]?.toString() ?? '-',
+                          ),
+                        ),
                       ],
                     ),
 
@@ -274,20 +303,20 @@ class DashboardPage extends StatelessWidget {
                             bool? confirm = await showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: const Text("Delete Student"),
-                                content: const Text(
-                                  "Are you sure you want to delete this student and all their activity/attendance data?",
+                                title: Text(l10n.deleteStudentTitle),
+                                content: Text(
+                                  l10n.deleteStudentDashboardContent,
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.pop(context, false),
-                                    child: const Text("Cancel"),
+                                    child: Text(l10n.cancel),
                                   ),
                                   ElevatedButton(
                                     onPressed: () =>
                                         Navigator.pop(context, true),
-                                    child: const Text("Delete"),
+                                    child: Text(l10n.delete),
                                   ),
                                 ],
                               ),

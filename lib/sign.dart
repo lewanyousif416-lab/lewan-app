@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login.dart';
+import 'l10n/app_localizations.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -22,6 +23,7 @@ class _SignUpPageState extends State<SignUpPage> {
   String selectedRole = "user";
 
   Future<void> signUp() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -46,8 +48,8 @@ class _SignUpPageState extends State<SignUpPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Account created successfully"),
+        SnackBar(
+          content: Text(l10n.accountCreatedSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
@@ -73,6 +75,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFF311B92),
       body: Center(
@@ -95,9 +98,12 @@ class _SignUpPageState extends State<SignUpPage> {
 
                 const SizedBox(height: 20),
 
-                const Text(
-                  "Create Account",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                Text(
+                  l10n.createAccountTitle,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
 
                 const SizedBox(height: 25),
@@ -105,7 +111,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
-                    labelText: "Full Name",
+                    labelText: l10n.fullNameLabel,
                     prefixIcon: const Icon(Icons.person),
                     filled: true,
                     fillColor: Colors.grey.shade200,
@@ -120,7 +126,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 TextField(
                   controller: emailController,
                   decoration: InputDecoration(
-                    labelText: "Email",
+                    labelText: l10n.emailLabel,
                     prefixIcon: const Icon(Icons.email),
                     filled: true,
                     fillColor: Colors.grey.shade200,
@@ -136,7 +142,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   controller: passwordController,
                   obscureText: obscurePassword,
                   decoration: InputDecoration(
-                    labelText: "Password",
+                    labelText: l10n.passwordLabel,
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -160,16 +166,19 @@ class _SignUpPageState extends State<SignUpPage> {
 
                 const SizedBox(height: 20),
 
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    "Register As",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    l10n.registerAsLabel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
 
                 RadioListTile<String>(
-                  title: const Text("User"),
+                  title: Text(l10n.userRole),
                   value: "user",
                   groupValue: selectedRole,
                   onChanged: (value) {
@@ -180,7 +189,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
 
                 RadioListTile<String>(
-                  title: const Text("Admin"),
+                  title: Text(l10n.adminRole),
                   value: "admin",
                   groupValue: selectedRole,
                   onChanged: (value) {
@@ -211,9 +220,12 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                     child: isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            "Sign Up",
-                            style: TextStyle(color: Colors.white, fontSize: 18),
+                        : Text(
+                            l10n.signUpButton,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
                           ),
                   ),
                 ),
@@ -225,7 +237,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       MaterialPageRoute(builder: (_) => const LoginPage()),
                     );
                   },
-                  child: const Text("Already have an account? Login"),
+                  child: Text(l10n.alreadyHaveAccountLogin),
                 ),
               ],
             ),

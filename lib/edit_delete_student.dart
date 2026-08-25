@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'l10n/app_localizations.dart';
 
 class EditDeleteStudentPage extends StatefulWidget {
   final QueryDocumentSnapshot student;
@@ -16,8 +17,10 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
   late TextEditingController locationController;
   late TextEditingController ageController;
 
-  static const List<String> educationOptions = ["Diploma", "Bachelor's Degree"];
-  static const List<String> maritalStatusOptions = ["Married", "Single"];
+  // Canonical keys — must match add_student.dart so saved data round-trips
+  // correctly regardless of which language was active when it was written.
+  static const List<String> educationKeys = ["diploma", "bachelor"];
+  static const List<String> maritalKeys = ["married", "single"];
 
   String? selectedEducation;
   String? selectedMaritalStatus;
@@ -37,17 +40,40 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
     ageController = TextEditingController(text: data["age"]?.toString() ?? "");
 
     final existingEducation = data["education"];
-    if (educationOptions.contains(existingEducation)) {
+    if (educationKeys.contains(existingEducation)) {
       selectedEducation = existingEducation;
     }
 
     final existingMaritalStatus = data["maritalStatus"];
-    if (maritalStatusOptions.contains(existingMaritalStatus)) {
+    if (maritalKeys.contains(existingMaritalStatus)) {
       selectedMaritalStatus = existingMaritalStatus;
     }
   }
 
+  String _educationLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case "twelfth":
+        return l10n.educationTwelfthGrade;
+      case "diploma":
+        return l10n.educationDiploma;
+      case "bachelor":
+        return l10n.educationBachelor;
+    }
+    return key;
+  }
+
+  String _maritalLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case "married":
+        return l10n.maritalMarried;
+      case "single":
+        return l10n.maritalSingle;
+    }
+    return key;
+  }
+
   Future<void> updateStudent() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => isSaving = true);
 
     try {
@@ -66,14 +92,14 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("Student Updated")));
+        ).showSnackBar(SnackBar(content: Text(l10n.studentUpdated)));
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("Failed to update: $e")));
+        ).showSnackBar(SnackBar(content: Text(l10n.failedToUpdate(e.toString()))));
       }
     } finally {
       if (mounted) setState(() => isSaving = false);
@@ -81,22 +107,21 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
   }
 
   Future<void> deleteStudent() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete Student"),
-        content: const Text(
-          "Are you sure you want to delete this student? This also removes all of their associated records.",
-        ),
+        title: Text(l10n.deleteStudentTitle),
+        content: Text(l10n.deleteStudentEditContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.white)),
+            child: Text(l10n.delete, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -131,16 +156,15 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Student Deleted Successfully")),
+          SnackBar(content: Text(l10n.studentDeletedSuccessfully)),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        String errorMessage = "Failed to delete: $e";
+        String errorMessage = l10n.failedToDelete(e.toString());
         if (e.toString().contains("permission-denied")) {
-          errorMessage =
-              "Permission denied: Ensure you are logged in with an admin account.";
+          errorMessage = l10n.permissionDeniedMessage;
         }
         ScaffoldMessenger.of(
           context,
@@ -162,55 +186,58 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text("Edit Student")),
+      appBar: AppBar(title: Text(l10n.editStudentTitle)),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: ListView(
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: "Name",
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.nameLabel,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
             TextField(
               controller: phoneController,
-              decoration: const InputDecoration(
-                labelText: "Phone",
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.phoneLabel,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
             TextField(
               controller: locationController,
-              decoration: const InputDecoration(
-                labelText: "Location",
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.locationLabel,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
             TextField(
               controller: ageController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Age",
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.ageLabel,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
               value: selectedEducation,
-              decoration: const InputDecoration(
-                labelText: "Education",
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.educationLabel,
+                border: const OutlineInputBorder(),
               ),
-              items: educationOptions
+              items: educationKeys
                   .map(
-                    (option) =>
-                        DropdownMenuItem(value: option, child: Text(option)),
+                    (key) => DropdownMenuItem(
+                      value: key,
+                      child: Text(_educationLabel(l10n, key)),
+                    ),
                   )
                   .toList(),
               onChanged: (value) {
@@ -220,14 +247,16 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
               value: selectedMaritalStatus,
-              decoration: const InputDecoration(
-                labelText: "Marital Status",
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.maritalStatusLabel,
+                border: const OutlineInputBorder(),
               ),
-              items: maritalStatusOptions
+              items: maritalKeys
                   .map(
-                    (option) =>
-                        DropdownMenuItem(value: option, child: Text(option)),
+                    (key) => DropdownMenuItem(
+                      value: key,
+                      child: Text(_maritalLabel(l10n, key)),
+                    ),
                   )
                   .toList(),
               onChanged: (value) {
@@ -245,7 +274,7 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
                         width: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text("Update"),
+                    : Text(l10n.update),
               ),
             ),
             const SizedBox(height: 12),
@@ -263,7 +292,7 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
                         width: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text("Delete Student"),
+                    : Text(l10n.deleteStudentButton),
               ),
             ),
           ],

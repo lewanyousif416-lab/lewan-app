@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'l10n/app_localizations.dart';
 
 class AttendancePage extends StatefulWidget {
   final int month; // 1 - 12
@@ -57,10 +58,10 @@ class _AttendancePageState extends State<AttendancePage> {
     return "${date.year}-$mm-$dd";
   }
 
-  String _dateLabel(DateTime date) {
+  String _dateLabel(DateTime date, AppLocalizations l10n) {
     final dd = date.day.toString().padLeft(2, '0');
     final mm = date.month.toString().padLeft(2, '0');
-    return "Friday $dd/$mm/${date.year}";
+    return l10n.fridayDateLabel("$dd/$mm/${date.year}");
   }
 
   Future<void> _loadExistingStatuses() async {
@@ -122,6 +123,7 @@ class _AttendancePageState extends State<AttendancePage> {
   }
 
   Future<void> _saveAll(List<QueryDocumentSnapshot> students) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => saving = true);
 
     try {
@@ -177,14 +179,14 @@ class _AttendancePageState extends State<AttendancePage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("Attendance saved.")));
+        ).showSnackBar(SnackBar(content: Text(l10n.attendanceSaved)));
       }
     } catch (e) {
       setState(() => saving = false);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Failed to save: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToSave(e.toString()))),
+        );
       }
     }
   }
@@ -246,6 +248,7 @@ class _AttendancePageState extends State<AttendancePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text("${widget.monthName} $year"),
@@ -258,7 +261,9 @@ class _AttendancePageState extends State<AttendancePage> {
               stream: studentsRef.orderBy('name').snapshots(),
               builder: (context, studentSnapshot) {
                 if (studentSnapshot.hasError) {
-                  return Center(child: Text("Error: ${studentSnapshot.error}"));
+                  return Center(
+                    child: Text(l10n.error(studentSnapshot.error.toString())),
+                  );
                 }
                 if (!studentSnapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
@@ -267,11 +272,11 @@ class _AttendancePageState extends State<AttendancePage> {
                 final students = studentSnapshot.data!.docs;
 
                 if (students.isEmpty) {
-                  return const Center(child: Text("No students found."));
+                  return Center(child: Text(l10n.noStudentsFound));
                 }
 
                 if (fridays.isEmpty) {
-                  return const Center(child: Text("No Fridays in this month."));
+                  return Center(child: Text(l10n.noFridaysInMonth));
                 }
 
                 return Column(
@@ -297,7 +302,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _dateLabel(friday),
+                                    _dateLabel(friday, l10n),
                                     style: const TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold,
@@ -334,7 +339,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                           Row(
                                             children: [
                                               _statusChip(
-                                                label: "Present",
+                                                label: l10n.present,
                                                 value: "present",
                                                 currentStatus: currentStatus,
                                                 onTap: () => _selectStatus(
@@ -344,7 +349,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                                 ),
                                               ),
                                               _statusChip(
-                                                label: "Absent",
+                                                label: l10n.absent,
                                                 value: "absent",
                                                 currentStatus: currentStatus,
                                                 onTap: () => _selectStatus(
@@ -354,7 +359,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                                 ),
                                               ),
                                               _statusChip(
-                                                label: "Permission",
+                                                label: l10n.permission,
                                                 value: "permission",
                                                 currentStatus: currentStatus,
                                                 onTap: () => _selectStatus(
@@ -407,7 +412,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                   )
                                 : const Icon(Icons.save, color: Colors.white),
                             label: Text(
-                              saving ? "Saving..." : "Save Attendance",
+                              saving ? l10n.saving : l10n.saveAttendance,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'l10n/app_localizations.dart';
 
 class AddStudentPage extends StatefulWidget {
   const AddStudentPage({super.key});
@@ -14,20 +15,40 @@ class _AddStudentPageState extends State<AddStudentPage> {
   final TextEditingController locationController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
 
-  static const List<String> educationOptions = [
-    "Twelfth grade",
-    "Diploma 's Degree",
-    "Bachelor's Degree",
-  ];
-
-  static const List<String> maritalStatusOptions = ["Married", "Single"];
+  // Canonical (language-independent) keys stored in Firestore.
+  // Only the on-screen label is translated.
+  static const List<String> educationKeys = ["twelfth", "diploma", "bachelor"];
+  static const List<String> maritalKeys = ["married", "single"];
 
   String? selectedEducation;
   String? selectedMaritalStatus;
 
   bool isLoading = false;
 
+  String _educationLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case "twelfth":
+        return l10n.educationTwelfthGrade;
+      case "diploma":
+        return l10n.educationDiploma;
+      case "bachelor":
+        return l10n.educationBachelor;
+    }
+    return key;
+  }
+
+  String _maritalLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case "married":
+        return l10n.maritalMarried;
+      case "single":
+        return l10n.maritalSingle;
+    }
+    return key;
+  }
+
   Future<void> saveStudent() async {
+    final l10n = AppLocalizations.of(context)!;
     // Check all fields
     if (nameController.text.trim().isEmpty ||
         phoneController.text.trim().isEmpty ||
@@ -36,8 +57,8 @@ class _AddStudentPageState extends State<AddStudentPage> {
         selectedEducation == null ||
         selectedMaritalStatus == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please fill all fields"),
+        SnackBar(
+          content: Text(l10n.pleaseFillAllFields),
           backgroundColor: Colors.red,
         ),
       );
@@ -74,20 +95,27 @@ class _AddStudentPageState extends State<AddStudentPage> {
       });
 
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Student Added Successfully"),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.studentAddedSuccessfully),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.errorGeneric(e.toString())),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -103,9 +131,11 @@ class _AddStudentPageState extends State<AddStudentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Student"),
+        title: Text(l10n.addStudentTitle),
         backgroundColor: const Color(0xFF673AB7),
         foregroundColor: Colors.white,
         leading: IconButton(
@@ -122,10 +152,10 @@ class _AddStudentPageState extends State<AddStudentPage> {
             // Student Name
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: "Student Name",
-                prefixIcon: Icon(Icons.person),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.studentNameLabel,
+                prefixIcon: const Icon(Icons.person),
+                border: const OutlineInputBorder(),
               ),
             ),
 
@@ -135,10 +165,10 @@ class _AddStudentPageState extends State<AddStudentPage> {
             TextField(
               controller: phoneController,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: "Phone Number",
-                prefixIcon: Icon(Icons.phone),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.phoneNumberLabel,
+                prefixIcon: const Icon(Icons.phone),
+                border: const OutlineInputBorder(),
               ),
             ),
 
@@ -147,10 +177,10 @@ class _AddStudentPageState extends State<AddStudentPage> {
             // Location
             TextField(
               controller: locationController,
-              decoration: const InputDecoration(
-                labelText: "Location",
-                prefixIcon: Icon(Icons.location_on),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.locationLabel,
+                prefixIcon: const Icon(Icons.location_on),
+                border: const OutlineInputBorder(),
               ),
             ),
 
@@ -160,10 +190,10 @@ class _AddStudentPageState extends State<AddStudentPage> {
             TextField(
               controller: ageController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Age",
-                prefixIcon: Icon(Icons.numbers),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.ageLabel,
+                prefixIcon: const Icon(Icons.numbers),
+                border: const OutlineInputBorder(),
               ),
             ),
 
@@ -172,15 +202,15 @@ class _AddStudentPageState extends State<AddStudentPage> {
             // Education
             DropdownButtonFormField<String>(
               value: selectedEducation,
-              decoration: const InputDecoration(
-                labelText: "Education",
-                prefixIcon: Icon(Icons.school),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.educationLabel,
+                prefixIcon: const Icon(Icons.school),
+                border: const OutlineInputBorder(),
               ),
-              items: educationOptions.map((option) {
+              items: educationKeys.map((key) {
                 return DropdownMenuItem<String>(
-                  value: option,
-                  child: Text(option),
+                  value: key,
+                  child: Text(_educationLabel(l10n, key)),
                 );
               }).toList(),
               onChanged: (value) {
@@ -195,15 +225,15 @@ class _AddStudentPageState extends State<AddStudentPage> {
             // Marital Status
             DropdownButtonFormField<String>(
               value: selectedMaritalStatus,
-              decoration: const InputDecoration(
-                labelText: "Marital Status",
-                prefixIcon: Icon(Icons.person_pin_circle),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.maritalStatusLabel,
+                prefixIcon: const Icon(Icons.person_pin_circle),
+                border: const OutlineInputBorder(),
               ),
-              items: maritalStatusOptions.map((option) {
+              items: maritalKeys.map((key) {
                 return DropdownMenuItem<String>(
-                  value: option,
-                  child: Text(option),
+                  value: key,
+                  child: Text(_maritalLabel(l10n, key)),
                 );
               }).toList(),
               onChanged: (value) {
@@ -230,9 +260,12 @@ class _AddStudentPageState extends State<AddStudentPage> {
                 ),
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Save Student",
-                        style: TextStyle(color: Colors.white, fontSize: 18),
+                    : Text(
+                        l10n.saveStudent,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                        ),
                       ),
               ),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'l10n/app_localizations.dart';
 
 class ActivityDetailPage extends StatefulWidget {
   final String activityId;
@@ -21,6 +22,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
   bool isSaving = false;
 
   Future<void> saveGrades(List<QueryDocumentSnapshot> students) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => isSaving = true);
     try {
       final batch = FirebaseFirestore.instance.batch();
@@ -49,15 +51,15 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
       await batch.commit();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Grades saved successfully!")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.gradesSavedSuccessfully)));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("Error saving: $e")));
+        ).showSnackBar(SnackBar(content: Text(l10n.errorSaving(e.toString()))));
       }
     } finally {
       if (mounted) setState(() => isSaving = false);
@@ -97,6 +99,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.activityTitle),
@@ -169,7 +172,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                                 Row(
                                   children: [
                                     _answerChip(
-                                      label: "Yes",
+                                      label: l10n.yes,
                                       value: "yes",
                                       currentAnswer: currentAnswer,
                                       onTap: () {
@@ -179,7 +182,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                                       },
                                     ),
                                     _answerChip(
-                                      label: "No",
+                                      label: l10n.no,
                                       value: "no",
                                       currentAnswer: currentAnswer,
                                       onTap: () {
@@ -216,7 +219,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text("Save All Grades"),
+                            : Text(l10n.saveAllGrades),
                       ),
                     ),
                   ),

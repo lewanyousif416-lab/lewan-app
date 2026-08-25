@@ -1,23 +1,9 @@
 import 'package:flutter/material.dart';
 import 'attendance_page.dart';
+import 'l10n/app_localizations.dart';
 
 class AttendanceMonthsPage extends StatelessWidget {
   const AttendanceMonthsPage({Key? key}) : super(key: key);
-
-  final List<String> months = const [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
 
   final List<int> fridayCount = const [
     5, // January
@@ -36,9 +22,26 @@ class AttendanceMonthsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    final months = <String>[
+      l10n.monthJanuary,
+      l10n.monthFebruary,
+      l10n.monthMarch,
+      l10n.monthApril,
+      l10n.monthMay,
+      l10n.monthJune,
+      l10n.monthJuly,
+      l10n.monthAugust,
+      l10n.monthSeptember,
+      l10n.monthOctober,
+      l10n.monthNovember,
+      l10n.monthDecember,
+    ];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Attendance - 2026"),
+        title: Text(l10n.attendanceYearTitle("2026")),
         backgroundColor: const Color(0xFF673AB7),
         centerTitle: true,
       ),
@@ -109,12 +112,9 @@ class AttendanceMonthsPage extends StatelessWidget {
 
                     const SizedBox(height: 8),
 
-                    Text(
+                    const Text(
                       "2026",
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 18,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 18),
                     ),
 
                     const SizedBox(height: 10),
@@ -131,7 +131,7 @@ class AttendanceMonthsPage extends StatelessWidget {
                       ),
 
                       child: Text(
-                        "${fridayCount[index]} Fridays",
+                        l10n.fridaysCount(fridayCount[index]),
                         style: const TextStyle(
                           color: Color(0xFF673AB7),
                           fontWeight: FontWeight.bold,
