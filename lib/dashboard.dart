@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:project/attendance_months.dart';
+import 'attendance_months.dart';
 import 'login.dart';
 import 'add_student.dart';
 import 'edit_delete_student.dart';
@@ -9,7 +9,7 @@ import 'search_student.dart';
 import 'total_students.dart';
 import 'change_password.dart';
 import 'payments_page.dart';
-import 'activities_list_page.dart'; // Import your activities list page
+import 'activities_list_page.dart';
 import 'l10n/app_localizations.dart';
 import 'locale_controller.dart';
 
@@ -18,7 +18,6 @@ class DashboardPage extends StatelessWidget {
 
   Future<void> logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
-
     if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
@@ -26,7 +25,6 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  // Deletes this student's attendance records, payment records, activity grades, and the student document itself.
   Future<void> _deleteStudentAndRecords(
     BuildContext context,
     String studentId,
@@ -35,7 +33,6 @@ class DashboardPage extends StatelessWidget {
     try {
       final batch = FirebaseFirestore.instance.batch();
 
-      // 1. Find and delete matching records (attendance, payments, etc.)
       final recordsSnapshot = await FirebaseFirestore.instance
           .collectionGroup('records')
           .get();
@@ -46,20 +43,17 @@ class DashboardPage extends StatelessWidget {
         }
       }
 
-      // 2. Find and delete matching activity grades
       final gradesSnapshot = await FirebaseFirestore.instance
           .collectionGroup('grades')
           .get();
 
       for (final doc in gradesSnapshot.docs) {
-        // ignore: unnecessary_cast
         final data = doc.data() as Map<String, dynamic>;
         if (doc.id == studentId || data['studentId'] == studentId) {
           batch.delete(doc.reference);
         }
       }
 
-      // 3. Delete the student document itself.
       batch.delete(
         FirebaseFirestore.instance.collection("students").doc(studentId),
       );
@@ -89,7 +83,6 @@ class DashboardPage extends StatelessWidget {
         backgroundColor: const Color(0xFF673AB7),
         actions: const [LanguageSwitcherAction()],
       ),
-
       drawer: Drawer(
         child: ListView(
           children: [
@@ -102,15 +95,11 @@ class DashboardPage extends StatelessWidget {
                 ),
               ),
             ),
-
             ListTile(
               leading: const Icon(Icons.dashboard),
               title: Text(l10n.dashboardTitle),
-              onTap: () {
-                Navigator.pop(context);
-              },
+              onTap: () => Navigator.pop(context),
             ),
-
             ListTile(
               leading: const Icon(Icons.person_add),
               title: Text(l10n.addStudentDrawer),
@@ -153,7 +142,6 @@ class DashboardPage extends StatelessWidget {
                 );
               },
             ),
-
             ListTile(
               leading: const Icon(Icons.payments),
               title: Text(l10n.paymentsDrawer),
@@ -164,8 +152,6 @@ class DashboardPage extends StatelessWidget {
                 );
               },
             ),
-
-            // Added: ListTile to open Activities page from the drawer
             ListTile(
               leading: const Icon(Icons.assignment),
               title: Text(l10n.activitiesDrawer),
@@ -176,7 +162,6 @@ class DashboardPage extends StatelessWidget {
                 );
               },
             ),
-
             ListTile(
               leading: const Icon(Icons.lock_reset),
               title: Text(l10n.changePasswordDrawer),
@@ -187,9 +172,7 @@ class DashboardPage extends StatelessWidget {
                 );
               },
             ),
-
             const Divider(),
-
             ListTile(
               leading: const Icon(Icons.language),
               title: Text(l10n.languageMenuTooltip),
@@ -203,7 +186,6 @@ class DashboardPage extends StatelessWidget {
                 LocaleController.setLocale(Locale(isKurdish ? 'en' : 'ckb'));
               },
             ),
-
             ListTile(
               leading: const Icon(Icons.logout),
               title: Text(l10n.logoutDrawer),
@@ -212,23 +194,24 @@ class DashboardPage extends StatelessWidget {
           ],
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(20),
-
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance.collection("students").snapshots(),
-
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(child: Text(l10n.somethingWentWrong));
             }
 
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            // Only show loader if we have NO cached data and are waiting
+            if (!snapshot.hasData &&
+                snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (snapshot.data!.docs.isEmpty) {
+            final docs = snapshot.data?.docs ?? [];
+
+            if (docs.isEmpty) {
               return Center(
                 child: Text(
                   l10n.noStudentsFoundBig,
@@ -238,24 +221,20 @@ class DashboardPage extends StatelessWidget {
             }
 
             return ListView.builder(
-              itemCount: snapshot.data!.docs.length,
-
+              itemCount: docs.length,
               itemBuilder: (context, index) {
-                var student = snapshot.data!.docs[index];
+                var student = docs[index];
                 final data = student.data() as Map<String, dynamic>;
 
                 return Card(
                   elevation: 4,
                   margin: const EdgeInsets.only(bottom: 15),
-
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: const Color(0xFF673AB7),
-                      child: Text(student["name"][0].toUpperCase()),
+                      child: Text((student["name"] ?? '?')[0].toUpperCase()),
                     ),
-
-                    title: Text(student["name"]),
-
+                    title: Text(student["name"] ?? 'Unnamed'),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -278,11 +257,9 @@ class DashboardPage extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Edit
                         IconButton(
                           icon: const Icon(Icons.edit, color: Colors.orange),
                           onPressed: () {
@@ -295,8 +272,6 @@ class DashboardPage extends StatelessWidget {
                             );
                           },
                         ),
-
-                        // Delete
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () async {

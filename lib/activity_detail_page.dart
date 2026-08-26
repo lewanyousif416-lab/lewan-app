@@ -17,7 +17,6 @@ class ActivityDetailPage extends StatefulWidget {
 }
 
 class _ActivityDetailPageState extends State<ActivityDetailPage> {
-  // studentId -> selected answer ("yes" / "no" / null if not chosen yet)
   final Map<String, String?> _gradeAnswers = {};
   bool isSaving = false;
 
@@ -41,10 +40,10 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
             'studentId': studentId,
             'studentName':
                 (student.data() as Map<String, dynamic>)['name'] ?? 'Unknown',
-            'activityId': widget.activityId, // Added activity ID
-            'activityTitle': widget.activityTitle, // Added activity name
+            'activityId': widget.activityId,
+            'activityTitle': widget.activityTitle,
             'score': answer,
-            'updatedAt': FieldValue.serverTimestamp(),
+            'updatedAt': DateTime.now().toIso8601String(),
           });
         }
       }
@@ -103,17 +102,18 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.activityTitle),
-        backgroundColor: const Color(0xFF673AB7), // Deep Purple 500
+        backgroundColor: const Color(0xFF673AB7),
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('students').snapshots(),
         builder: (context, studentSnapshot) {
-          if (!studentSnapshot.hasData) {
+          if (!studentSnapshot.hasData &&
+              studentSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final students = studentSnapshot.data!.docs;
+          final students = studentSnapshot.data?.docs ?? [];
 
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance

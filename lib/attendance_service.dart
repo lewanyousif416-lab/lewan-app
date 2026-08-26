@@ -16,29 +16,44 @@ class AttendanceService {
     await _firestore
         .collection("attendance")
         .doc(dateId)
-        .collection(
-          "records",
-        ) // unified: was "students", now matches AttendancePage
+        .collection("records")
         .doc(studentId)
         .set({
           "studentId": studentId,
-          "name": studentName, // unified key name: AttendancePage reads "name"
+          "name": studentName,
           "status": status,
           "date": Timestamp.fromDate(date),
-          "updatedAt": FieldValue.serverTimestamp(),
+          "updatedAt": DateTime.now().toIso8601String(),
         });
   }
 
-  // Read Attendance for One Date
+  // Read Attendance for One Date (Supports Offline Caching)
   Future<Map<String, String>> getAttendance(DateTime date) async {
     String dateId =
         "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
-    QuerySnapshot snapshot = await _firestore
-        .collection("attendance")
-        .doc(dateId)
-        .collection("records") // unified: was "students"
-        .get();
+    QuerySnapshot snapshot;
+    try {
+      snapshot = await _firestore
+          .collection("attendance")
+          .doc(dateId)
+          .collection("records")
+          .get(const GetOptions(source: Source.cache));
+
+      if (snapshot.docs.isEmpty) {
+        snapshot = await _firestore
+            .collection("attendance")
+            .doc(dateId)
+            .collection("records")
+            .get();
+      }
+    } catch (_) {
+      snapshot = await _firestore
+          .collection("attendance")
+          .doc(dateId)
+          .collection("records")
+          .get();
+    }
 
     Map<String, String> attendance = {};
 
@@ -62,9 +77,12 @@ class AttendanceService {
     await _firestore
         .collection("attendance")
         .doc(dateId)
-        .collection("records") // unified: was "students"
+        .collection("records")
         .doc(studentId)
-        .update({"status": status, "updatedAt": FieldValue.serverTimestamp()});
+        .update({
+          "status": status,
+          "updatedAt": DateTime.now().toIso8601String(),
+        });
   }
 
   // Delete Attendance for a single student on a single date
@@ -78,7 +96,7 @@ class AttendanceService {
     await _firestore
         .collection("attendance")
         .doc(dateId)
-        .collection("records") // unified: was "students"
+        .collection("records")
         .doc(studentId)
         .delete();
   }
@@ -112,7 +130,7 @@ class AttendanceService {
     return _firestore
         .collection("attendance")
         .doc(dateId)
-        .collection("records") // unified: was "students"
+        .collection("records")
         .snapshots();
   }
 }

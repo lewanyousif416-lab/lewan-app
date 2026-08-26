@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'l10n/app_localizations.dart';
 
 class AttendancePage extends StatefulWidget {
-  final int month; // 1 - 12
+  final int month;
   final String monthName;
 
   const AttendancePage({Key? key, required this.month, required this.monthName})
@@ -20,11 +20,7 @@ class _AttendancePageState extends State<AttendancePage> {
     'students',
   );
 
-  // date string (yyyy-MM-dd) -> studentId -> status
-  // This holds whatever is currently on screen (edited or not yet saved).
   Map<String, Map<String, String>> localStatuses = {};
-
-  // Snapshot of what is actually saved in Firestore right now.
   Map<String, Map<String, String>> savedStatuses = {};
 
   bool loadingStatuses = true;
@@ -69,15 +65,34 @@ class _AttendancePageState extends State<AttendancePage> {
 
     for (final friday in fridays) {
       final key = _dateKey(friday);
-      final snapshot = await FirebaseFirestore.instance
-          .collection('attendance')
-          .doc(key)
-          .collection('records')
-          .get();
+
+      // Load offline cache first, fallback to server if online
+      QuerySnapshot snapshot;
+      try {
+        snapshot = await FirebaseFirestore.instance
+            .collection('attendance')
+            .doc(key)
+            .collection('records')
+            .get(const GetOptions(source: Source.cache));
+
+        if (snapshot.docs.isEmpty) {
+          snapshot = await FirebaseFirestore.instance
+              .collection('attendance')
+              .doc(key)
+              .collection('records')
+              .get();
+        }
+      } catch (_) {
+        snapshot = await FirebaseFirestore.instance
+            .collection('attendance')
+            .doc(key)
+            .collection('records')
+            .get();
+      }
 
       final Map<String, String> dayMap = {};
       for (final doc in snapshot.docs) {
-        final data = doc.data();
+        final data = doc.data() as Map<String, dynamic>;
         dayMap[doc.id] = (data['status'] ?? '') as String;
       }
       loaded[key] = dayMap;
@@ -86,7 +101,6 @@ class _AttendancePageState extends State<AttendancePage> {
     if (mounted) {
       setState(() {
         savedStatuses = loaded;
-        // Deep copy so editing locally doesn't mutate savedStatuses.
         localStatuses = {
           for (final entry in loaded.entries)
             entry.key: Map<String, String>.from(entry.value),
@@ -96,7 +110,6 @@ class _AttendancePageState extends State<AttendancePage> {
     }
   }
 
-  // Just updates what's on screen. No Firestore write here.
   void _selectStatus({
     required DateTime friday,
     required String studentId,
@@ -109,19 +122,6 @@ class _AttendancePageState extends State<AttendancePage> {
     });
   }
 
-  // ignore: unused_element
-  bool get _hasUnsavedChanges {
-    for (final key in localStatuses.keys) {
-      final local = localStatuses[key] ?? {};
-      final saved = savedStatuses[key] ?? {};
-      if (local.length != saved.length) return true;
-      for (final studentId in local.keys) {
-        if (local[studentId] != saved[studentId]) return true;
-      }
-    }
-    return false;
-  }
-
   Future<void> _saveAll(List<QueryDocumentSnapshot> students) async {
     final l10n = AppLocalizations.of(context)!;
     setState(() => saving = true);
@@ -129,7 +129,6 @@ class _AttendancePageState extends State<AttendancePage> {
     try {
       final batch = FirebaseFirestore.instance.batch();
 
-      // Build a lookup of studentId -> name for the write.
       final Map<String, String> nameById = {
         for (final doc in students)
           doc.id:
@@ -153,15 +152,10 @@ class _AttendancePageState extends State<AttendancePage> {
               .doc(studentId);
 
           batch.set(docRef, {
-            // IMPORTANT: studentId is stored as a field (not just the doc
-            // id) so we can find and delete a student's records later via
-            // a collectionGroup query, even if the parent "attendance/{date}"
-            // document was never directly written and doesn't show up in a
-            // plain collection().get() call.
             'studentId': studentId,
             'name': studentName,
             'status': status,
-            'updatedAt': FieldValue.serverTimestamp(),
+            'updatedAt': DateTime.now().toIso8601String(),
           });
         }
       }
@@ -246,9 +240,6 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
-  // Builds a small tappable "N Present" / "N Absent" / "N Permission" badge
-  // that, when tapped, opens a dialog listing the names of every student
-  // currently marked with that status for the given Friday.
   Widget _statusSummaryBadge({
     required String status,
     required String label,
@@ -296,8 +287,8 @@ class _AttendancePageState extends State<AttendancePage> {
     required List<QueryDocumentSnapshot> students,
   }) {
     final l10n = AppLocalizations.of(context)!;
-
     final matchingNames = <String>[];
+
     for (final studentDoc in students) {
       final data = studentDoc.data() as Map<String, dynamic>;
       final studentId = studentDoc.id;
@@ -376,18 +367,16 @@ class _AttendancePageState extends State<AttendancePage> {
                     child: Text(l10n.error(studentSnapshot.error.toString())),
                   );
                 }
-                if (!studentSnapshot.hasData) {
+                if (!studentSnapshot.hasData &&
+                    studentSnapshot.connectionState ==
+                        ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final students = studentSnapshot.data!.docs;
+                final students = studentSnapshot.data?.docs ?? [];
 
                 if (students.isEmpty) {
                   return Center(child: Text(l10n.noStudentsFound));
-                }
-
-                if (fridays.isEmpty) {
-                  return Center(child: Text(l10n.noFridaysInMonth));
                 }
 
                 return Column(
@@ -421,8 +410,6 @@ class _AttendancePageState extends State<AttendancePage> {
                                     ),
                                   ),
                                   const SizedBox(height: 10),
-                                  // Tappable summary badges — tap "Present"
-                                  // or "Absent" to see the list of names.
                                   Wrap(
                                     children: [
                                       _statusSummaryBadge(
@@ -524,9 +511,6 @@ class _AttendancePageState extends State<AttendancePage> {
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 4),
-                                          if (index != students.length - 1)
-                                            const Divider(height: 20),
                                         ],
                                       ),
                                     );
@@ -538,8 +522,6 @@ class _AttendancePageState extends State<AttendancePage> {
                         },
                       ),
                     ),
-
-                    // Bottom Save bar
                     SafeArea(
                       top: false,
                       child: Padding(

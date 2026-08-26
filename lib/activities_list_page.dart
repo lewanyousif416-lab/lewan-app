@@ -87,8 +87,6 @@ class ActivitiesListPage extends StatelessWidget {
             onPressed: () async {
               final newTitle = controller.text.trim();
               if (newTitle.isNotEmpty && newTitle != currentTitle) {
-                // Since Firestore document IDs can't be renamed directly,
-                // we create a new document with the new ID/title, copy data, and delete the old one.
                 final firestore = FirebaseFirestore.instance;
                 final oldDocRef = firestore
                     .collection('activities_list')
@@ -102,10 +100,8 @@ class ActivitiesListPage extends StatelessWidget {
                   final data = oldDocSnapshot.data() as Map<String, dynamic>;
                   data['title'] = newTitle;
 
-                  // Set data to new document ID
                   await newDocRef.set(data);
 
-                  // Copy sub-collection 'grades' if any exist
                   final gradesSnapshot = await oldDocRef
                       .collection('grades')
                       .get();
@@ -116,7 +112,6 @@ class ActivitiesListPage extends StatelessWidget {
                         .set(gradeDoc.data());
                   }
 
-                  // Delete old document and its sub-collection contents
                   await oldDocRef.delete();
                 }
 
@@ -160,7 +155,8 @@ class ActivitiesListPage extends StatelessWidget {
             );
           }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (!snapshot.hasData &&
+              snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -332,13 +328,12 @@ class ActivitiesListPage extends StatelessWidget {
             onPressed: () async {
               final titleText = controller.text.trim();
               if (titleText.isNotEmpty) {
-                // Uses the exact text title as the Firestore Document ID
                 await FirebaseFirestore.instance
                     .collection('activities_list')
                     .doc(titleText)
                     .set({
                       'title': titleText,
-                      'createdAt': FieldValue.serverTimestamp(),
+                      'createdAt': DateTime.now().toIso8601String(),
                     });
                 if (context.mounted) Navigator.pop(context);
               }

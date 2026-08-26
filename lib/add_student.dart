@@ -15,8 +15,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
   final TextEditingController locationController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
 
-  // Canonical (language-independent) keys stored in Firestore.
-  // Only the on-screen label is translated.
   static const List<String> educationKeys = ["twelfth", "diploma", "bachelor"];
   static const List<String> maritalKeys = ["married", "single"];
 
@@ -49,7 +47,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
 
   Future<void> saveStudent() async {
     final l10n = AppLocalizations.of(context)!;
-    // Check all fields
     if (nameController.text.trim().isEmpty ||
         phoneController.text.trim().isEmpty ||
         locationController.text.trim().isEmpty ||
@@ -70,7 +67,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
     });
 
     try {
-      // Save student to Firestore
+      // Offline-friendly save (uses DateTime.now() instead of serverTimestamp)
       await FirebaseFirestore.instance.collection("students").add({
         "name": nameController.text.trim(),
         "phone": phoneController.text.trim(),
@@ -78,23 +75,20 @@ class _AddStudentPageState extends State<AddStudentPage> {
         "age": ageController.text.trim(),
         "education": selectedEducation,
         "maritalStatus": selectedMaritalStatus,
-        "createdAt": FieldValue.serverTimestamp(),
+        "createdAt": DateTime.now().toIso8601String(),
       });
 
-      // Clear all text fields
       nameController.clear();
       phoneController.clear();
       locationController.clear();
       ageController.clear();
 
-      // Clear dropdown selections
       setState(() {
         selectedEducation = null;
         selectedMaritalStatus = null;
         isLoading = false;
       });
 
-      // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -125,7 +119,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
     phoneController.dispose();
     locationController.dispose();
     ageController.dispose();
-
     super.dispose();
   }
 
@@ -149,7 +142,6 @@ class _AddStudentPageState extends State<AddStudentPage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Student Name
             TextField(
               controller: nameController,
               decoration: InputDecoration(
@@ -158,10 +150,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                 border: const OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // Phone Number
             TextField(
               controller: phoneController,
               keyboardType: TextInputType.phone,
@@ -171,10 +160,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                 border: const OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // Location
             TextField(
               controller: locationController,
               decoration: InputDecoration(
@@ -183,10 +169,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                 border: const OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // Age
             TextField(
               controller: ageController,
               keyboardType: TextInputType.number,
@@ -196,10 +179,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                 border: const OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // Education
             DropdownButtonFormField<String>(
               value: selectedEducation,
               decoration: InputDecoration(
@@ -219,10 +199,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                 });
               },
             ),
-
             const SizedBox(height: 20),
-
-            // Marital Status
             DropdownButtonFormField<String>(
               value: selectedMaritalStatus,
               decoration: InputDecoration(
@@ -242,10 +219,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
                 });
               },
             ),
-
             const SizedBox(height: 30),
-
-            // Save Student Button
             SizedBox(
               width: double.infinity,
               height: 55,
