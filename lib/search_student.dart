@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'l10n/app_localizations.dart';
 
 class SearchStudentPage extends StatefulWidget {
   const SearchStudentPage({super.key});
@@ -15,9 +16,10 @@ class _SearchStudentPageState extends State<SearchStudentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Search Student"),
+        title: Text(l10n.searchStudentTitle),
         backgroundColor: const Color(0xFF673AB7),
       ),
 
@@ -29,7 +31,7 @@ class _SearchStudentPageState extends State<SearchStudentPage> {
             TextField(
               controller: searchController,
               decoration: InputDecoration(
-                hintText: "Search by student name",
+                hintText: l10n.searchByNameHint,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -51,7 +53,7 @@ class _SearchStudentPageState extends State<SearchStudentPage> {
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return const Center(child: Text("Something went wrong"));
+                    return Center(child: Text(l10n.somethingWentWrong));
                   }
 
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -65,10 +67,10 @@ class _SearchStudentPageState extends State<SearchStudentPage> {
                   }).toList();
 
                   if (students.isEmpty) {
-                    return const Center(
+                    return Center(
                       child: Text(
-                        "No Student Found",
-                        style: TextStyle(fontSize: 20),
+                        l10n.noStudentFound,
+                        style: const TextStyle(fontSize: 20),
                       ),
                     );
                   }
@@ -97,12 +99,28 @@ class _SearchStudentPageState extends State<SearchStudentPage> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Phone: ${data["phone"]}"),
-                              Text("Location: ${data["location"]}"),
-                              Text("Age: ${data["age"] ?? '-'}"),
-                              Text("Education: ${data["education"] ?? '-'}"),
                               Text(
-                                "Marital Status: ${data["maritalStatus"] ?? '-'}",
+                                l10n.phoneField(
+                                  data["phone"]?.toString() ?? '-',
+                                ),
+                              ),
+                              Text(
+                                l10n.locationField(
+                                  data["location"]?.toString() ?? '-',
+                                ),
+                              ),
+                              Text(
+                                l10n.ageField(data["age"]?.toString() ?? '-'),
+                              ),
+                              Text(
+                                l10n.educationField(
+                                  data["education"]?.toString() ?? '-',
+                                ),
+                              ),
+                              Text(
+                                l10n.maritalStatusField(
+                                  data["maritalStatus"]?.toString() ?? '-',
+                                ),
                               ),
                             ],
                           ),

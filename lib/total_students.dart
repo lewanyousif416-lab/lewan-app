@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'l10n/app_localizations.dart';
 
 class TotalStudentsPage extends StatelessWidget {
   const TotalStudentsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Total Students"),
+        title: Text(l10n.totalStudentsTitle),
         backgroundColor: const Color(0xFF673AB7),
       ),
 
@@ -16,7 +18,7 @@ class TotalStudentsPage extends StatelessWidget {
         stream: FirebaseFirestore.instance.collection("students").snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const Center(child: Text("Something went wrong"));
+            return Center(child: Text(l10n.somethingWentWrong));
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -42,9 +44,9 @@ class TotalStudentsPage extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    const Text(
-                      "Total Number of Students",
-                      style: TextStyle(
+                    Text(
+                      l10n.totalNumberOfStudents,
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),

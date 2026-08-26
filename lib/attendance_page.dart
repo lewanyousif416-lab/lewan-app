@@ -246,6 +246,117 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
+  // Builds a small tappable "N Present" / "N Absent" / "N Permission" badge
+  // that, when tapped, opens a dialog listing the names of every student
+  // currently marked with that status for the given Friday.
+  Widget _statusSummaryBadge({
+    required String status,
+    required String label,
+    required Map<String, String> dayStatuses,
+    required List<QueryDocumentSnapshot> students,
+    required void Function() onTap,
+  }) {
+    final color = _statusColor(status);
+    final count = dayStatuses.values.where((s) => s == status).length;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 8, bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.circle, size: 8, color: color),
+            const SizedBox(width: 6),
+            Text(
+              "$count $label",
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStatusListDialog({
+    required BuildContext context,
+    required String status,
+    required Map<String, String> dayStatuses,
+    required List<QueryDocumentSnapshot> students,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+
+    final matchingNames = <String>[];
+    for (final studentDoc in students) {
+      final data = studentDoc.data() as Map<String, dynamic>;
+      final studentId = studentDoc.id;
+      final studentName = (data['name'] ?? 'Unknown') as String;
+      if (dayStatuses[studentId] == status) {
+        matchingNames.add(studentName);
+      }
+    }
+
+    String title;
+    switch (status) {
+      case 'present':
+        title = l10n.presentStudentsTitle;
+        break;
+      case 'absent':
+        title = l10n.absentStudentsTitle;
+        break;
+      default:
+        title = l10n.permissionStudentsTitle;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: matchingNames.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(l10n.noStudentsWithStatus),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: matchingNames.length,
+                  itemBuilder: (context, index) => ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: _statusColor(status),
+                      child: Text(
+                        matchingNames[index].isNotEmpty
+                            ? matchingNames[index][0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    title: Text(matchingNames[index]),
+                  ),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -308,6 +419,49 @@ class _AttendancePageState extends State<AttendancePage> {
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF673AB7),
                                     ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  // Tappable summary badges — tap "Present"
+                                  // or "Absent" to see the list of names.
+                                  Wrap(
+                                    children: [
+                                      _statusSummaryBadge(
+                                        status: "present",
+                                        label: l10n.present,
+                                        dayStatuses: dayStatuses,
+                                        students: students,
+                                        onTap: () => _showStatusListDialog(
+                                          context: context,
+                                          status: "present",
+                                          dayStatuses: dayStatuses,
+                                          students: students,
+                                        ),
+                                      ),
+                                      _statusSummaryBadge(
+                                        status: "absent",
+                                        label: l10n.absent,
+                                        dayStatuses: dayStatuses,
+                                        students: students,
+                                        onTap: () => _showStatusListDialog(
+                                          context: context,
+                                          status: "absent",
+                                          dayStatuses: dayStatuses,
+                                          students: students,
+                                        ),
+                                      ),
+                                      _statusSummaryBadge(
+                                        status: "permission",
+                                        label: l10n.permission,
+                                        dayStatuses: dayStatuses,
+                                        students: students,
+                                        onTap: () => _showStatusListDialog(
+                                          context: context,
+                                          status: "permission",
+                                          dayStatuses: dayStatuses,
+                                          students: students,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const Divider(height: 20),
                                   ...students.map((studentDoc) {

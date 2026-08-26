@@ -206,6 +206,30 @@ abstract class AppLocalizations {
   /// **'Permission'**
   String get permission;
 
+  /// No description provided for @presentStudentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Present Students'**
+  String get presentStudentsTitle;
+
+  /// No description provided for @absentStudentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Absent Students'**
+  String get absentStudentsTitle;
+
+  /// No description provided for @permissionStudentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Students with Permission'**
+  String get permissionStudentsTitle;
+
+  /// No description provided for @noStudentsWithStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'No students in this list yet.'**
+  String get noStudentsWithStatus;
+
   /// No description provided for @activitiesTitle.
   ///
   /// In en, this message translates to:

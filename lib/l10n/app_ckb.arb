@@ -21,6 +21,10 @@
   "present": "ئامادە",
   "absent": "ئامادە نەبوو",
   "permission": "مۆڵەت",
+  "presentStudentsTitle": "خوێندکارە ئامادەکان",
+  "absentStudentsTitle": "خوێندکارە ئامادەنەبووەکان",
+  "permissionStudentsTitle": "خوێندکارانی مۆڵەت",
+  "noStudentsWithStatus": "هیچ خوێندکارێک لەم لیستەدا نییە.",
 
   "activitiesTitle": "چالاکییەکان",
   "addNewCard": "کارتی نوێ زیادبکە",

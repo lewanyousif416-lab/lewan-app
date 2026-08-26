@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'payment_period_grid_page.dart';
+import 'l10n/app_localizations.dart';
 
 class PaymentDetailPage extends StatefulWidget {
   final PaymentPeriodType periodType;
@@ -70,6 +71,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
   }
 
   Future<void> _openAddStudentDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final studentsSnapshot = await FirebaseFirestore.instance
         .collection('students')
         .orderBy('name')
@@ -83,9 +85,9 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
     if (!mounted) return;
 
     if (available.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("All students have already been added.")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.allStudentsAlreadyAdded)));
       return;
     }
 
@@ -109,14 +111,14 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 8,
                         ),
                         child: Text(
-                          "Add Students",
-                          style: TextStyle(
+                          l10n.addStudentsSheetTitle,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -175,7 +177,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                                     Navigator.pop(context);
                                   },
                             child: Text(
-                              "Add Selected (${selectedIds.length})",
+                              l10n.addSelected(selectedIds.length),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -215,22 +217,25 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
   }
 
   Future<void> _removeStudent(String studentId) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Remove Student"),
+        title: Text(l10n.removeStudentTitle),
         content: Text(
-          "Remove ${entries[studentId]?.name ?? 'this student'} from ${widget.periodLabel}? "
-          "This deletes their saved payment for this period too.",
+          l10n.removeStudentContent(
+            entries[studentId]?.name ?? '',
+            widget.periodLabel,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Remove"),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -248,6 +253,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
   }
 
   Future<void> _saveAll() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => saving = true);
 
     try {
@@ -277,14 +283,14 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("Payments saved.")));
+        ).showSnackBar(SnackBar(content: Text(l10n.paymentsSaved)));
       }
     } catch (e) {
       setState(() => saving = false);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Failed to save: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToSave(e.toString()))),
+        );
       }
     }
   }
@@ -299,6 +305,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final studentIds = entries.keys.toList();
 
     return Scaffold(
@@ -309,7 +316,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add),
-            tooltip: "Add Students",
+            tooltip: l10n.addStudentsButton,
             onPressed: loading ? null : _openAddStudentDialog,
           ),
         ],
@@ -330,15 +337,15 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                                 color: Colors.grey,
                               ),
                               const SizedBox(height: 12),
-                              const Text(
-                                "No students added yet.",
-                                style: TextStyle(fontSize: 16),
+                              Text(
+                                l10n.noStudentsAddedYet,
+                                style: const TextStyle(fontSize: 16),
                               ),
                               const SizedBox(height: 8),
                               TextButton.icon(
                                 onPressed: _openAddStudentDialog,
                                 icon: const Icon(Icons.person_add),
-                                label: const Text("Add students"),
+                                label: Text(l10n.addStudentsButton),
                               ),
                             ],
                           ),
@@ -382,7 +389,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                                           ),
                                           onPressed: () =>
                                               _removeStudent(studentId),
-                                          tooltip: "Remove",
+                                          tooltip: l10n.delete,
                                         ),
                                       ],
                                     ),
@@ -396,9 +403,10 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                                                 const TextInputType.numberWithOptions(
                                                   decimal: true,
                                                 ),
-                                            decoration: const InputDecoration(
-                                              labelText: "Price",
-                                              border: OutlineInputBorder(),
+                                            decoration: InputDecoration(
+                                              labelText: l10n.priceLabel,
+                                              border:
+                                                  const OutlineInputBorder(),
                                               isDense: true,
                                             ),
                                           ),
@@ -443,8 +451,8 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                                                 const SizedBox(width: 6),
                                                 Text(
                                                   entry.paid
-                                                      ? "Paid"
-                                                      : "Unpaid",
+                                                      ? l10n.paidLabel
+                                                      : l10n.unpaidLabel,
                                                   style: TextStyle(
                                                     color: entry.paid
                                                         ? Colors.white
@@ -492,7 +500,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                                 )
                               : const Icon(Icons.save, color: Colors.white),
                           label: Text(
-                            saving ? "Saving..." : "Save Payments",
+                            saving ? l10n.saving : l10n.savePayments,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,

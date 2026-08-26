@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'payment_detail_page.dart';
+import 'l10n/app_localizations.dart';
 
 enum PaymentPeriodType { weekly, monthly }
 
@@ -10,36 +11,36 @@ class PaymentPeriodGridPage extends StatelessWidget {
   const PaymentPeriodGridPage({Key? key, required this.periodType})
     : super(key: key);
 
-  static const List<String> months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
   bool get isWeekly => periodType == PaymentPeriodType.weekly;
 
-  // "periodId" is what gets stored in Firestore (stable, sortable).
+  // "periodId" is what gets stored in Firestore (stable, sortable, always
+  // English-formatted so the language switch never touches saved data).
   // "periodLabel" is what gets shown on the card / app bar.
-  List<Map<String, String>> get _periods {
+  List<Map<String, String>> _periods(AppLocalizations l10n) {
     if (isWeekly) {
       // Weeks 1..52 of the year.
       return List.generate(52, (index) {
         final weekNum = index + 1;
         return {
           "id": "$year-W${weekNum.toString().padLeft(2, '0')}",
-          "label": "Week $weekNum",
+          "label": l10n.weekLabel(weekNum),
         };
       });
     } else {
+      final months = <String>[
+        l10n.monthJanuary,
+        l10n.monthFebruary,
+        l10n.monthMarch,
+        l10n.monthApril,
+        l10n.monthMay,
+        l10n.monthJune,
+        l10n.monthJuly,
+        l10n.monthAugust,
+        l10n.monthSeptember,
+        l10n.monthOctober,
+        l10n.monthNovember,
+        l10n.monthDecember,
+      ];
       return List.generate(12, (index) {
         final monthNum = index + 1;
         return {
@@ -52,12 +53,15 @@ class PaymentPeriodGridPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final periods = _periods;
+    final l10n = AppLocalizations.of(context)!;
+    final periods = _periods(l10n);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          isWeekly ? "Weekly Payments - $year" : "Monthly Payments - $year",
+          isWeekly
+              ? l10n.weeklyPaymentsTitle("$year")
+              : l10n.monthlyPaymentsTitle("$year"),
         ),
         backgroundColor: const Color(0xFF673AB7),
         centerTitle: true,

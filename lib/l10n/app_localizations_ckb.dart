@@ -73,6 +73,18 @@ class AppLocalizationsCkb extends AppLocalizations {
   String get permission => 'مۆڵەت';
 
   @override
+  String get presentStudentsTitle => 'خوێندکارە ئامادەکان';
+
+  @override
+  String get absentStudentsTitle => 'خوێندکارە ئامادەنەبووەکان';
+
+  @override
+  String get permissionStudentsTitle => 'خوێندکارانی مۆڵەت';
+
+  @override
+  String get noStudentsWithStatus => 'هیچ خوێندکارێک لەم لیستەدا نییە.';
+
+  @override
   String get activitiesTitle => 'چالاکییەکان';
 
   @override

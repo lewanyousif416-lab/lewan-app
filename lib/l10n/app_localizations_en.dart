@@ -73,6 +73,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permission => 'Permission';
 
   @override
+  String get presentStudentsTitle => 'Present Students';
+
+  @override
+  String get absentStudentsTitle => 'Absent Students';
+
+  @override
+  String get permissionStudentsTitle => 'Students with Permission';
+
+  @override
+  String get noStudentsWithStatus => 'No students in this list yet.';
+
+  @override
   String get activitiesTitle => 'Activities';
 
   @override

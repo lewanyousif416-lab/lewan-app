@@ -26,6 +26,10 @@
   "present": "Present",
   "absent": "Absent",
   "permission": "Permission",
+  "presentStudentsTitle": "Present Students",
+  "absentStudentsTitle": "Absent Students",
+  "permissionStudentsTitle": "Students with Permission",
+  "noStudentsWithStatus": "No students in this list yet.",
 
   "activitiesTitle": "Activities",
   "addNewCard": "Add New Card",

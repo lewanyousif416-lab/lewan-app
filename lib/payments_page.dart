@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'payment_period_grid_page.dart';
+import 'l10n/app_localizations.dart';
 
 class PaymentsPage extends StatelessWidget {
   const PaymentsPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Payments"),
+        title: Text(l10n.paymentsTitle),
         backgroundColor: const Color(0xFF673AB7),
         centerTitle: true,
       ),
@@ -19,8 +21,8 @@ class PaymentsPage extends StatelessWidget {
           children: [
             Expanded(
               child: _PaymentTypeCard(
-                title: "Weekly",
-                subtitle: "Charge students by the week",
+                title: l10n.weeklyTitle,
+                subtitle: l10n.weeklySubtitle,
                 icon: Icons.calendar_view_week,
                 onTap: () {
                   Navigator.push(
@@ -37,8 +39,8 @@ class PaymentsPage extends StatelessWidget {
             const SizedBox(height: 20),
             Expanded(
               child: _PaymentTypeCard(
-                title: "Monthly",
-                subtitle: "Charge students by the month",
+                title: l10n.monthlyTitle,
+                subtitle: l10n.monthlySubtitle,
                 icon: Icons.calendar_month,
                 onTap: () {
                   Navigator.push(
