@@ -3,7 +3,7 @@ import 'attendance_page.dart';
 import 'l10n/app_localizations.dart';
 
 class AttendanceMonthsPage extends StatelessWidget {
-  const AttendanceMonthsPage({Key? key}) : super(key: key);
+  const AttendanceMonthsPage({super.key});
 
   final List<int> fridayCount = const [
     5, // January

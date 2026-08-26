@@ -134,10 +134,25 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
     try {
       final studentId = widget.student.id;
 
-      // Fetch all records using collection group query
-      final recordsSnapshot = await FirebaseFirestore.instance
-          .collectionGroup('records')
-          .get();
+      // Fetch records using collection group query safely
+      QuerySnapshot recordsSnapshot;
+      try {
+        recordsSnapshot = await FirebaseFirestore.instance
+            .collectionGroup('records')
+            .get(const GetOptions(source: Source.cache));
+      } catch (_) {
+        try {
+          recordsSnapshot = await FirebaseFirestore.instance
+              .collectionGroup('records')
+              .get()
+              .timeout(const Duration(milliseconds: 1000));
+        } catch (_) {
+          recordsSnapshot = await FirebaseFirestore.instance
+              .collection('students')
+              .limit(0)
+              .get(const GetOptions(source: Source.cache));
+        }
+      }
 
       final batch = FirebaseFirestore.instance.batch();
 

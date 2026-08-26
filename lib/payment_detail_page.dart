@@ -9,11 +9,11 @@ class PaymentDetailPage extends StatefulWidget {
   final String periodLabel; // e.g. "Week 3" or "January"
 
   const PaymentDetailPage({
-    Key? key,
+    super.key,
     required this.periodType,
     required this.periodId,
     required this.periodLabel,
-  }) : super(key: key);
+  });
 
   @override
   State<PaymentDetailPage> createState() => _PaymentDetailPageState();
@@ -52,10 +52,25 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
   }
 
   Future<void> _loadExisting() async {
-    final snapshot = await _periodRef.collection('records').get();
+    QuerySnapshot snapshot;
+    try {
+      snapshot = await _periodRef
+          .collection('records')
+          .get(const GetOptions(source: Source.cache));
+    } catch (_) {
+      try {
+        snapshot = await _periodRef
+            .collection('records')
+            .get()
+            .timeout(const Duration(milliseconds: 1000));
+      } catch (_) {
+        if (mounted) setState(() => loading = false);
+        return;
+      }
+    }
 
     for (final doc in snapshot.docs) {
-      final data = doc.data();
+      final data = doc.data() as Map<String, dynamic>;
       entries[doc.id] = _PaymentEntry(
         name: (data['name'] ?? 'Unknown') as String,
         priceController: TextEditingController(
@@ -72,10 +87,27 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
 
   Future<void> _openAddStudentDialog() async {
     final l10n = AppLocalizations.of(context)!;
-    final studentsSnapshot = await FirebaseFirestore.instance
-        .collection('students')
-        .orderBy('name')
-        .get();
+    QuerySnapshot studentsSnapshot;
+    try {
+      studentsSnapshot = await FirebaseFirestore.instance
+          .collection('students')
+          .orderBy('name')
+          .get(const GetOptions(source: Source.cache));
+    } catch (_) {
+      try {
+        studentsSnapshot = await FirebaseFirestore.instance
+            .collection('students')
+            .orderBy('name')
+            .get()
+            .timeout(const Duration(milliseconds: 1000));
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.noStudentsFound)),
+        );
+        return;
+      }
+    }
 
     // Only offer students not already added to this period.
     final available = studentsSnapshot.docs
@@ -272,7 +304,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
           'name': paymentEntry.name,
           'amount': amount,
           'status': paymentEntry.paid ? 'paid' : 'unpaid',
-          'updatedAt': FieldValue.serverTimestamp(),
+          'updatedAt': DateTime.now().toIso8601String(),
         });
       }
 

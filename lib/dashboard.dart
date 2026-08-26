@@ -33,9 +33,24 @@ class DashboardPage extends StatelessWidget {
     try {
       final batch = FirebaseFirestore.instance.batch();
 
-      final recordsSnapshot = await FirebaseFirestore.instance
-          .collectionGroup('records')
-          .get();
+      QuerySnapshot recordsSnapshot;
+      try {
+        recordsSnapshot = await FirebaseFirestore.instance
+            .collectionGroup('records')
+            .get(const GetOptions(source: Source.cache));
+      } catch (_) {
+        try {
+          recordsSnapshot = await FirebaseFirestore.instance
+              .collectionGroup('records')
+              .get()
+              .timeout(const Duration(milliseconds: 1000));
+        } catch (_) {
+          recordsSnapshot = await FirebaseFirestore.instance
+              .collection('students')
+              .limit(0)
+              .get(const GetOptions(source: Source.cache));
+        }
+      }
 
       for (final doc in recordsSnapshot.docs) {
         if (doc.id == studentId) {
@@ -43,9 +58,24 @@ class DashboardPage extends StatelessWidget {
         }
       }
 
-      final gradesSnapshot = await FirebaseFirestore.instance
-          .collectionGroup('grades')
-          .get();
+      QuerySnapshot gradesSnapshot;
+      try {
+        gradesSnapshot = await FirebaseFirestore.instance
+            .collectionGroup('grades')
+            .get(const GetOptions(source: Source.cache));
+      } catch (_) {
+        try {
+          gradesSnapshot = await FirebaseFirestore.instance
+              .collectionGroup('grades')
+              .get()
+              .timeout(const Duration(milliseconds: 1000));
+        } catch (_) {
+          gradesSnapshot = await FirebaseFirestore.instance
+              .collection('students')
+              .limit(0)
+              .get(const GetOptions(source: Source.cache));
+        }
+      }
 
       for (final doc in gradesSnapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
@@ -297,7 +327,7 @@ class DashboardPage extends StatelessWidget {
                               ),
                             );
 
-                            if (confirm == true) {
+                            if (confirm == true && context.mounted) {
                               await _deleteStudentAndRecords(
                                 context,
                                 student.id,

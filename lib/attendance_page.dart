@@ -6,8 +6,7 @@ class AttendancePage extends StatefulWidget {
   final int month;
   final String monthName;
 
-  const AttendancePage({Key? key, required this.month, required this.monthName})
-    : super(key: key);
+  const AttendancePage({super.key, required this.month, required this.monthName});
 
   @override
   State<AttendancePage> createState() => _AttendancePageState();
@@ -65,35 +64,36 @@ class _AttendancePageState extends State<AttendancePage> {
 
     for (final friday in fridays) {
       final key = _dateKey(friday);
+      final dayMap = <String, String>{};
 
-      // Load offline cache first, fallback to server if online
-      QuerySnapshot snapshot;
+      // Load from offline cache first (instant), with safe short timeout fallback
       try {
-        snapshot = await FirebaseFirestore.instance
+        final snapshot = await FirebaseFirestore.instance
             .collection('attendance')
             .doc(key)
             .collection('records')
             .get(const GetOptions(source: Source.cache));
 
-        if (snapshot.docs.isEmpty) {
-          snapshot = await FirebaseFirestore.instance
+        for (final doc in snapshot.docs) {
+          final data = doc.data();
+          dayMap[doc.id] = (data['status'] ?? '') as String;
+        }
+      } catch (_) {
+        try {
+          final snapshot = await FirebaseFirestore.instance
               .collection('attendance')
               .doc(key)
               .collection('records')
-              .get();
-        }
-      } catch (_) {
-        snapshot = await FirebaseFirestore.instance
-            .collection('attendance')
-            .doc(key)
-            .collection('records')
-            .get();
-      }
+              .get()
+              .timeout(const Duration(milliseconds: 1000));
 
-      final Map<String, String> dayMap = {};
-      for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        dayMap[doc.id] = (data['status'] ?? '') as String;
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            dayMap[doc.id] = (data['status'] ?? '') as String;
+          }
+        } catch (_) {
+          // Offline or timed out - continue with empty map
+        }
       }
       loaded[key] = dayMap;
     }
@@ -514,7 +514,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                         ],
                                       ),
                                     );
-                                  }).toList(),
+                                  }),
                                 ],
                               ),
                             ),

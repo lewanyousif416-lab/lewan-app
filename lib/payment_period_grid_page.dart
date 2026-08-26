@@ -8,8 +8,7 @@ class PaymentPeriodGridPage extends StatelessWidget {
   final PaymentPeriodType periodType;
   static const int year = 2026;
 
-  const PaymentPeriodGridPage({Key? key, required this.periodType})
-    : super(key: key);
+  const PaymentPeriodGridPage({super.key, required this.periodType});
 
   bool get isWeekly => periodType == PaymentPeriodType.weekly;
 

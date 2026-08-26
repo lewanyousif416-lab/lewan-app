@@ -39,20 +39,17 @@ class AttendanceService {
           .doc(dateId)
           .collection("records")
           .get(const GetOptions(source: Source.cache));
-
-      if (snapshot.docs.isEmpty) {
+    } catch (_) {
+      try {
         snapshot = await _firestore
             .collection("attendance")
             .doc(dateId)
             .collection("records")
-            .get();
+            .get()
+            .timeout(const Duration(milliseconds: 1000));
+      } catch (_) {
+        return {};
       }
-    } catch (_) {
-      snapshot = await _firestore
-          .collection("attendance")
-          .doc(dateId)
-          .collection("records")
-          .get();
     }
 
     Map<String, String> attendance = {};

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'l10n/app_localizations.dart';
 
 class PaymentsPage extends StatefulWidget {
@@ -14,53 +13,19 @@ class _PaymentsPageState extends State<PaymentsPage> {
   final TextEditingController amountController = TextEditingController();
   bool isProcessing = false;
 
-  // Helper method to check active Wi-Fi or Mobile Data
-  Future<bool> _hasInternetConnection() async {
-    final List<ConnectivityResult> results = await Connectivity()
-        .checkConnectivity();
-    return results.contains(ConnectivityResult.wifi) ||
-        results.contains(ConnectivityResult.mobile);
-  }
-
-  // Handle Payment or Activation Process
+  // Handle Payment or Activation Process (Supports Offline Storage & Automatic Cloud Sync)
   Future<void> _processPaymentOrActivation(
     String studentId,
     String studentName,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-
-    // 1. Check Internet Connection First
-    bool isOnline = await _hasInternetConnection();
-
-    if (!isOnline) {
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Wi-Fi / Internet Required'),
-            content: const Text(
-              'Processing payments or activating accounts requires an active internet connection. Please connect to Wi-Fi and try again.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-      return;
-    }
-
-    // 2. Process Online Payment / Activation
     setState(() => isProcessing = true);
 
     try {
       final double amount =
           double.tryParse(amountController.text.trim()) ?? 0.0;
 
-      // Online Firestore write / Payment Gateway API call
+      // Offline-friendly Firestore write (persists locally and syncs automatically)
       await FirebaseFirestore.instance.collection('payments').add({
         'studentId': studentId,
         'studentName': studentName,
@@ -73,8 +38,12 @@ class _PaymentsPageState extends State<PaymentsPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Payment/Activation completed successfully!'),
+          SnackBar(
+            content: Text(
+              localeIsKurdish()
+                  ? 'پارەدان بە سەرکەوتوویی پاشەکەوت کرا!'
+                  : 'Payment recorded successfully!',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -83,7 +52,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to process: ${e.toString()}'),
+            content: Text(l10n.failedToSave(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -91,6 +60,10 @@ class _PaymentsPageState extends State<PaymentsPage> {
     } finally {
       if (mounted) setState(() => isProcessing = false);
     }
+  }
+
+  bool localeIsKurdish() {
+    return Localizations.localeOf(context).languageCode == 'ckb';
   }
 
   @override
