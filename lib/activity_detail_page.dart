@@ -158,7 +158,10 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                                 backgroundColor: const Color(0xFF673AB7),
                                 child: Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                  style: const TextStyle(color: Colors.white),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               title: Text(name),

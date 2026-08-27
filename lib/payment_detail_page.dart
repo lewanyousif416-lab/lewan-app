@@ -173,6 +173,10 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                                 backgroundColor: const Color(0xFF673AB7),
                                 child: Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               title: Text(name),

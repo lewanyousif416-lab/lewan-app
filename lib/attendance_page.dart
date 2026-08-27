@@ -362,7 +362,10 @@ class _AttendancePageState extends State<AttendancePage> {
                         matchingNames[index].isNotEmpty
                             ? matchingNames[index][0].toUpperCase()
                             : '?',
-                        style: const TextStyle(color: Colors.white),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     title: Text(matchingNames[index]),
