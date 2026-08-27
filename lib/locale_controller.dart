@@ -41,7 +41,7 @@ class LanguageSwitcherAction extends StatelessWidget {
       valueListenable: LocaleController.notifier,
       builder: (context, locale, _) {
         return PopupMenuButton<String>(
-          icon: const Icon(Icons.language),
+          icon: const Icon(Icons.language, color: Colors.white),
           tooltip: 'Language / زمان',
           onSelected: (code) => LocaleController.setLocale(Locale(code)),
           itemBuilder: (context) => [

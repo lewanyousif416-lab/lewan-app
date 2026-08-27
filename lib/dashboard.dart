@@ -111,6 +111,8 @@ class DashboardPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.dashboardTitle),
         backgroundColor: const Color(0xFF673AB7),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: const [LanguageSwitcherAction()],
       ),
       drawer: Drawer(

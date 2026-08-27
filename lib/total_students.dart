@@ -12,6 +12,8 @@ class TotalStudentsPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.totalStudentsTitle),
         backgroundColor: const Color(0xFF673AB7),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
 
       body: StreamBuilder<QuerySnapshot>(

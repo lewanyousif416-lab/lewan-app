@@ -131,8 +131,9 @@ class _AddStudentPageState extends State<AddStudentPage> {
         title: Text(l10n.addStudentTitle),
         backgroundColor: const Color(0xFF673AB7),
         foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pop(context);
           },

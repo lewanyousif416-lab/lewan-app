@@ -135,6 +135,7 @@ class ActivitiesListPage extends StatelessWidget {
         title: Text(l10n.activitiesTitle),
         backgroundColor: const Color(0xFF673AB7), // Deep Purple 500
         foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance

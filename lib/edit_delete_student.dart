@@ -203,7 +203,12 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.editStudentTitle)),
+      appBar: AppBar(
+        title: Text(l10n.editStudentTitle),
+        backgroundColor: const Color(0xFF673AB7),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: ListView(

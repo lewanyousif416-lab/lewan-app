@@ -344,10 +344,12 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
       appBar: AppBar(
         title: Text(widget.periodLabel),
         backgroundColor: const Color(0xFF673AB7),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_add),
+            icon: const Icon(Icons.person_add, color: Colors.white),
             tooltip: l10n.addStudentsButton,
             onPressed: loading ? null : _openAddStudentDialog,
           ),

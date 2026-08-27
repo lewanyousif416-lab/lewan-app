@@ -68,11 +68,22 @@ class _AttendancePageState extends State<AttendancePage> {
 
       // Load from offline cache first (instant), with safe short timeout fallback
       try {
-        final snapshot = await FirebaseFirestore.instance
+        var snapshot = await FirebaseFirestore.instance
             .collection('attendance')
             .doc(key)
             .collection('records')
             .get(const GetOptions(source: Source.cache));
+
+        if (snapshot.docs.isEmpty) {
+          try {
+            snapshot = await FirebaseFirestore.instance
+                .collection('attendance')
+                .doc(key)
+                .collection('records')
+                .get()
+                .timeout(const Duration(milliseconds: 800));
+          } catch (_) {}
+        }
 
         for (final doc in snapshot.docs) {
           final data = doc.data();
@@ -85,7 +96,7 @@ class _AttendancePageState extends State<AttendancePage> {
               .doc(key)
               .collection('records')
               .get()
-              .timeout(const Duration(milliseconds: 1000));
+              .timeout(const Duration(milliseconds: 800));
 
           for (final doc in snapshot.docs) {
             final data = doc.data();
@@ -110,16 +121,36 @@ class _AttendancePageState extends State<AttendancePage> {
     }
   }
 
-  void _selectStatus({
+  Future<void> _selectStatus({
     required DateTime friday,
     required String studentId,
+    required String studentName,
     required String status,
-  }) {
+  }) async {
     final key = _dateKey(friday);
     setState(() {
       localStatuses.putIfAbsent(key, () => {});
       localStatuses[key]![studentId] = status;
+      savedStatuses.putIfAbsent(key, () => {});
+      savedStatuses[key]![studentId] = status;
     });
+
+    // Auto-save immediately to Firestore (local cache & cloud sync)
+    try {
+      await FirebaseFirestore.instance
+          .collection('attendance')
+          .doc(key)
+          .collection('records')
+          .doc(studentId)
+          .set({
+            'studentId': studentId,
+            'name': studentName,
+            'status': status,
+            'updatedAt': DateTime.now().toIso8601String(),
+          });
+    } catch (_) {
+      // offline persistence stores it locally
+    }
   }
 
   Future<void> _saveAll(List<QueryDocumentSnapshot> students) async {
@@ -213,7 +244,7 @@ class _AttendancePageState extends State<AttendancePage> {
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? color : color.withOpacity(0.12),
+          color: selected ? color : color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: color, width: selected ? 0 : 1),
         ),
@@ -257,9 +288,9 @@ class _AttendancePageState extends State<AttendancePage> {
         margin: const EdgeInsets.only(right: 8, bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.4)),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -355,6 +386,8 @@ class _AttendancePageState extends State<AttendancePage> {
       appBar: AppBar(
         title: Text("${widget.monthName} $year"),
         backgroundColor: const Color(0xFF673AB7),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
       body: loadingStatuses
@@ -486,6 +519,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                                 onTap: () => _selectStatus(
                                                   friday: friday,
                                                   studentId: studentId,
+                                                  studentName: studentName,
                                                   status: "present",
                                                 ),
                                               ),
@@ -496,6 +530,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                                 onTap: () => _selectStatus(
                                                   friday: friday,
                                                   studentId: studentId,
+                                                  studentName: studentName,
                                                   status: "absent",
                                                 ),
                                               ),
@@ -506,6 +541,7 @@ class _AttendancePageState extends State<AttendancePage> {
                                                 onTap: () => _selectStatus(
                                                   friday: friday,
                                                   studentId: studentId,
+                                                  studentName: studentName,
                                                   status: "permission",
                                                 ),
                                               ),

@@ -21,6 +21,8 @@ class _SearchStudentPageState extends State<SearchStudentPage> {
       appBar: AppBar(
         title: Text(l10n.searchStudentTitle),
         backgroundColor: const Color(0xFF673AB7),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
 
       body: Padding(

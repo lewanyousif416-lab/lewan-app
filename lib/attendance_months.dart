@@ -43,6 +43,8 @@ class AttendanceMonthsPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.attendanceYearTitle("2026")),
         backgroundColor: const Color(0xFF673AB7),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
 

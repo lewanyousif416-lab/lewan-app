@@ -63,6 +63,8 @@ class PaymentPeriodGridPage extends StatelessWidget {
               : l10n.monthlyPaymentsTitle("$year"),
         ),
         backgroundColor: const Color(0xFF673AB7),
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
 
