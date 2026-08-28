@@ -973,6 +973,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Language'**
   String get languageMenuTooltip;
+
+  /// No description provided for @attendanceAnalyticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance Analytics'**
+  String get attendanceAnalyticsTitle;
 }
 
 class _AppLocalizationsDelegate

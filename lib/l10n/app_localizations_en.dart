@@ -492,4 +492,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageMenuTooltip => 'Language';
+
+  @override
+  String get attendanceAnalyticsTitle => 'Attendance Analytics';
 }

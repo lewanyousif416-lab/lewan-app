@@ -31,95 +31,118 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
   DateTime selectedMonth = DateTime.now();
 
   Future<List<StudentAttendanceModel>> _fetchMonthlyAttendance() async {
-    final startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
-    final endOfMonth = DateTime(
-      selectedMonth.year,
-      selectedMonth.month + 1,
-      0,
-      23,
-      59,
-      59,
-    );
-
-    // Get all attendance documents or subcollections
-    QuerySnapshot snapshot;
-    try {
-      snapshot = await FirebaseFirestore.instance
-          .collection('attendance')
-          .get();
-    } catch (_) {
-      snapshot = await FirebaseFirestore.instance
-          .collectionGroup('records')
-          .get();
-    }
+    final yearStr = selectedMonth.year.toString();
+    final paddedMonthStr = selectedMonth.month.toString().padLeft(2, '0');
 
     Map<String, int> attendedMap = {};
     Map<String, String> namesMap = {};
-    int totalLessonsInMonth = 0;
+    Set<String> uniqueDatesInMonth = {};
+    Set<String> allStudentIds = {};
 
-    for (var doc in snapshot.docs) {
+    // 1. Fetch all registered students
+    try {
+      final studentsSnapshot = await FirebaseFirestore.instance
+          .collection('students')
+          .get();
+      for (var doc in studentsSnapshot.docs) {
+        final sData = doc.data();
+        final studentId = doc.id;
+        namesMap[studentId] = sData['name'] ?? 'Unnamed';
+        allStudentIds.add(studentId);
+        attendedMap[studentId] = 0;
+      }
+    } catch (_) {}
+
+    // 2. Fetch all attendance records
+    List<QueryDocumentSnapshot> docsList = [];
+    try {
+      final groupSnap = await FirebaseFirestore.instance
+          .collectionGroup('records')
+          .get();
+      docsList = groupSnap.docs;
+    } catch (_) {}
+
+    for (var doc in docsList) {
       final data = doc.data() as Map<String, dynamic>;
+      bool isCurrentSelectedMonth = false;
+      DateTime? recordDate;
 
-      // Try parsing date from multiple common field types
-      DateTime? docDate;
       if (data['date'] is Timestamp) {
-        docDate = (data['date'] as Timestamp).toDate();
-      } else if (data['createdAt'] is Timestamp) {
-        docDate = (data['createdAt'] as Timestamp).toDate();
-      } else if (data['date'] is String) {
-        docDate = DateTime.tryParse(data['date']);
+        recordDate = (data['date'] as Timestamp).toDate();
+        if (recordDate.year == selectedMonth.year &&
+            recordDate.month == selectedMonth.month) {
+          isCurrentSelectedMonth = true;
+        }
+      } else {
+        final pathSegments = doc.reference.path.split('/');
+        for (var segment in pathSegments) {
+          if (segment.startsWith("$yearStr-$paddedMonthStr-") ||
+              segment.startsWith("$yearStr-${selectedMonth.month}-")) {
+            isCurrentSelectedMonth = true;
+            try {
+              List<String> parts = segment.split('-');
+              if (parts.length >= 3) {
+                recordDate = DateTime(
+                  int.parse(parts[0]),
+                  int.parse(parts[1]),
+                  int.parse(parts[2]),
+                );
+              }
+            } catch (_) {}
+            break;
+          }
+        }
       }
 
-      // If no date field exists, treat all records as part of current dataset
-      bool isMatch =
-          docDate == null ||
-          (docDate.isAfter(startOfMonth.subtract(const Duration(seconds: 1))) &&
-              docDate.isBefore(endOfMonth.add(const Duration(seconds: 1))));
+      if (isCurrentSelectedMonth) {
+        String dateKey = recordDate != null
+            ? "${recordDate.year}-${recordDate.month}-${recordDate.day}"
+            : doc.reference.path.split('/')[1];
 
-      if (isMatch) {
-        totalLessonsInMonth++;
+        uniqueDatesInMonth.add(dateKey);
 
-        // Support multiple common field array formats
-        List presentList =
-            data['presentStudentIds'] ??
-            data['present_students'] ??
-            data['present'] ??
-            data['students'] ??
-            [];
+        final studentId = data['studentId']?.toString() ?? doc.id;
+        final status = data['status']?.toString().toLowerCase() ?? '';
+        final name = data['name']?.toString();
 
-        for (var item in presentList) {
-          String id = item is Map
-              ? (item['id'] ?? item['studentId'])
-              : item.toString();
-          attendedMap[id] = (attendedMap[id] ?? 0) + 1;
+        if (name != null && name.isNotEmpty) {
+          namesMap[studentId] = name;
+        }
+
+        allStudentIds.add(studentId);
+
+        if (status == 'present' || status == '1' || status == 'true') {
+          attendedMap[studentId] = (attendedMap[studentId] ?? 0) + 1;
         }
       }
     }
 
-    if (totalLessonsInMonth == 0) return [];
+    int totalLessonsInMonth = uniqueDatesInMonth.length;
 
-    // Fetch names from students collection
-    final studentsSnapshot = await FirebaseFirestore.instance
-        .collection('students')
-        .get();
-    for (var doc in studentsSnapshot.docs) {
-      final sData = doc.data();
-      namesMap[doc.id] = sData['name'] ?? 'Unnamed';
+    if (totalLessonsInMonth == 0 && attendedMap.isNotEmpty) {
+      totalLessonsInMonth = attendedMap.values.fold(
+        0,
+        (max, element) => element > max ? element : max,
+      );
     }
 
+    if (totalLessonsInMonth == 0) return [];
+
     List<StudentAttendanceModel> results = [];
-    attendedMap.forEach((id, attendedCount) {
+    for (String id in allStudentIds) {
+      int attendedCount = attendedMap[id] ?? 0;
       double percentage = (attendedCount / totalLessonsInMonth) * 100;
+
       results.add(
         StudentAttendanceModel(
           studentId: id,
           studentName: namesMap[id] ?? id,
           attendedLessons: attendedCount,
           totalLessons: totalLessonsInMonth,
-          percentage: percentage,
+          percentage: percentage > 100 ? 100 : percentage,
         ),
       );
-    });
+    }
 
     results.sort((a, b) => b.percentage.compareTo(a.percentage));
     return results;
@@ -134,6 +157,7 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
       appBar: AppBar(title: Text(l10n.attendanceAnalyticsTitle)),
       body: Column(
         children: [
+          // Month Selector Header
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Row(
@@ -190,7 +214,14 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
                 }
 
                 final data = snapshot.data!;
-                final topStudent = data.first;
+
+                // Get highest percentage score
+                final double topPercentage = data.first.percentage;
+
+                // Collect all students who tied for top score
+                final topStudents = data
+                    .where((student) => student.percentage == topPercentage)
+                    .toList();
 
                 return Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -205,18 +236,24 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
                             children: [
                               Text(
                                 isKurdish
-                                    ? 'بەرزترین ڕێژەی ئامادەبوون'
-                                    : 'Most Attended Student',
+                                    ? (topStudents.length > 1
+                                          ? 'بەرزترین ڕێژەی ئامادەبوون'
+                                          : 'بەرزترین ڕێژەی ئامادەبوون')
+                                    : (topStudents.length > 1
+                                          ? 'Most Attended Students'
+                                          : 'Most Attended Student'),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
                               ),
                               const SizedBox(height: 8),
+                              // Displays all top students separated by comma
                               Text(
-                                '${topStudent.studentName}: ${topStudent.percentage.toStringAsFixed(1)}%',
+                                '${topStudents.map((s) => s.studentName).join(', ')}: ${topPercentage.toStringAsFixed(1)}%',
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  fontSize: 22,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF673AB7),
                                 ),
@@ -287,7 +324,7 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
                                 barRods: [
                                   BarChartRodData(
                                     toY: item.percentage,
-                                    color: idx == 0
+                                    color: item.percentage == topPercentage
                                         ? Colors.green
                                         : const Color(0xFF673AB7),
                                     width: 22,

@@ -492,4 +492,7 @@ class AppLocalizationsCkb extends AppLocalizations {
 
   @override
   String get languageMenuTooltip => 'زمان';
+
+  @override
+  String get attendanceAnalyticsTitle => 'ئاماری ئامادەبوون';
 }

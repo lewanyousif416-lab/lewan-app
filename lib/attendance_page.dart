@@ -6,7 +6,11 @@ class AttendancePage extends StatefulWidget {
   final int month;
   final String monthName;
 
-  const AttendancePage({super.key, required this.month, required this.monthName});
+  const AttendancePage({
+    super.key,
+    required this.month,
+    required this.monthName,
+  });
 
   @override
   State<AttendancePage> createState() => _AttendancePageState();
@@ -66,7 +70,6 @@ class _AttendancePageState extends State<AttendancePage> {
       final key = _dateKey(friday);
       final dayMap = <String, String>{};
 
-      // Load from offline cache first (instant), with safe short timeout fallback
       try {
         var snapshot = await FirebaseFirestore.instance
             .collection('attendance')
@@ -128,28 +131,44 @@ class _AttendancePageState extends State<AttendancePage> {
     required String status,
   }) async {
     final key = _dateKey(friday);
+
+    // Check if the tapped status is already selected for this student
+    final currentSelected = localStatuses[key]?[studentId];
+    final isDeselecting = currentSelected == status;
+
     setState(() {
       localStatuses.putIfAbsent(key, () => {});
-      localStatuses[key]![studentId] = status;
       savedStatuses.putIfAbsent(key, () => {});
-      savedStatuses[key]![studentId] = status;
+
+      if (isDeselecting) {
+        localStatuses[key]!.remove(studentId);
+        savedStatuses[key]!.remove(studentId);
+      } else {
+        localStatuses[key]![studentId] = status;
+        savedStatuses[key]![studentId] = status;
+      }
     });
 
-    // Auto-save immediately to Firestore (local cache & cloud sync)
+    // Auto-save immediately to Firestore (or delete record if deselected)
     try {
-      await FirebaseFirestore.instance
+      final docRef = FirebaseFirestore.instance
           .collection('attendance')
           .doc(key)
           .collection('records')
-          .doc(studentId)
-          .set({
-            'studentId': studentId,
-            'name': studentName,
-            'status': status,
-            'updatedAt': DateTime.now().toIso8601String(),
-          });
+          .doc(studentId);
+
+      if (isDeselecting) {
+        await docRef.delete();
+      } else {
+        await docRef.set({
+          'studentId': studentId,
+          'name': studentName,
+          'status': status,
+          'updatedAt': DateTime.now().toIso8601String(),
+        });
+      }
     } catch (_) {
-      // offline persistence stores it locally
+      // Offline persistence stores it locally
     }
   }
 
@@ -182,12 +201,16 @@ class _AttendancePageState extends State<AttendancePage> {
               .collection('records')
               .doc(studentId);
 
-          batch.set(docRef, {
-            'studentId': studentId,
-            'name': studentName,
-            'status': status,
-            'updatedAt': DateTime.now().toIso8601String(),
-          });
+          if (status.isEmpty) {
+            batch.delete(docRef);
+          } else {
+            batch.set(docRef, {
+              'studentId': studentId,
+              'name': studentName,
+              'status': status,
+              'updatedAt': DateTime.now().toIso8601String(),
+            });
+          }
         }
       }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'attendance_months.dart';
+import 'attendance_analytics.dart';
 import 'login.dart';
 import 'add_student.dart';
 import 'edit_delete_student.dart';
@@ -175,6 +176,22 @@ class DashboardPage extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.bar_chart),
+              title: Text(
+                LocaleController.isKurdish
+                    ? 'ئاماری ئامادەبوون'
+                    : 'Attendance Analytics',
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AttendanceAnalyticsPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.payments),
               title: Text(l10n.paymentsDrawer),
               onTap: () {
@@ -235,7 +252,6 @@ class DashboardPage extends StatelessWidget {
               return Center(child: Text(l10n.somethingWentWrong));
             }
 
-            // Only show loader if we have NO cached data and are waiting
             if (!snapshot.hasData &&
                 snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());

@@ -185,5 +185,6 @@
   "totalStudentsTitle": "Total Students",
   "totalNumberOfStudents": "Total Number of Students",
 
-  "languageMenuTooltip": "Language"
+  "languageMenuTooltip": "Language",
+  "attendanceAnalyticsTitle": "Attendance Analytics"
 }
