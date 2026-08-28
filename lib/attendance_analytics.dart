@@ -39,11 +39,19 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
     Set<String> uniqueDatesInMonth = {};
     Set<String> allStudentIds = {};
 
-    // 1. Fetch all registered students
+    // 1. Fetch all registered students (Server first, fallback to Cache offline)
     try {
-      final studentsSnapshot = await FirebaseFirestore.instance
-          .collection('students')
-          .get();
+      QuerySnapshot<Map<String, dynamic>> studentsSnapshot;
+      try {
+        studentsSnapshot = await FirebaseFirestore.instance
+            .collection('students')
+            .get();
+      } catch (_) {
+        studentsSnapshot = await FirebaseFirestore.instance
+            .collection('students')
+            .get(const GetOptions(source: Source.cache));
+      }
+
       for (var doc in studentsSnapshot.docs) {
         final sData = doc.data();
         final studentId = doc.id;
@@ -53,12 +61,19 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
       }
     } catch (_) {}
 
-    // 2. Fetch all attendance records
+    // 2. Fetch all attendance records (Server first, fallback to Cache offline)
     List<QueryDocumentSnapshot> docsList = [];
     try {
-      final groupSnap = await FirebaseFirestore.instance
-          .collectionGroup('records')
-          .get();
+      QuerySnapshot groupSnap;
+      try {
+        groupSnap = await FirebaseFirestore.instance
+            .collectionGroup('records')
+            .get();
+      } catch (_) {
+        groupSnap = await FirebaseFirestore.instance
+            .collectionGroup('records')
+            .get(const GetOptions(source: Source.cache));
+      }
       docsList = groupSnap.docs;
     } catch (_) {}
 
