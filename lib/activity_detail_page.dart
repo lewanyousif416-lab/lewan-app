@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'l10n/app_localizations.dart';
 
-class ActivityDetailPage extends StatefulWidget {
+class ActivityDetailPage extends StatelessWidget {
   final String activityId;
   final String activityTitle;
 
@@ -12,25 +12,22 @@ class ActivityDetailPage extends StatefulWidget {
     required this.activityTitle,
   });
 
-  @override
-  State<ActivityDetailPage> createState() => _ActivityDetailPageState();
-}
-
-class _ActivityDetailPageState extends State<ActivityDetailPage> {
   CollectionReference get _gradesRef => FirebaseFirestore.instance
       .collection('activities_list')
-      .doc(widget.activityId)
+      .doc(activityId)
       .collection('grades');
 
-  Future<void> _removeStudent(String studentId, String studentName) async {
+  Future<void> _removeStudent(
+    BuildContext context,
+    String studentId,
+    String studentName,
+  ) async {
     final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.removeStudentTitle),
-        content: Text(
-          l10n.removeStudentContent(studentName, widget.activityTitle),
-        ),
+        content: Text(l10n.removeStudentContent(studentName, activityTitle)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -50,20 +47,8 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
     if (confirm != true) return;
 
-    try {
-      await _gradesRef.doc(studentId).delete();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Removed $studentName successfully')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToDelete(e.toString()))),
-        );
-      }
-    }
+    // Direct deletion works offline immediately in local Firestore cache
+    _gradesRef.doc(studentId).delete().catchError((_) {});
   }
 
   Future<void> _setStudentScore(
@@ -71,22 +56,17 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
     String studentName,
     String score,
   ) async {
-    try {
-      await _gradesRef.doc(studentId).set({
-        'studentId': studentId,
-        'studentName': studentName,
-        'activityId': widget.activityId,
-        'activityTitle': widget.activityTitle,
-        'score': score,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to update score: $e')));
-      }
-    }
+    _gradesRef
+        .doc(studentId)
+        .set({
+          'studentId': studentId,
+          'studentName': studentName,
+          'activityId': activityId,
+          'activityTitle': activityTitle,
+          'score': score,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true))
+        .catchError((_) {});
   }
 
   Widget _answerChip({
@@ -126,14 +106,15 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.activityTitle),
+        title: Text(activityTitle),
         backgroundColor: const Color(0xFF673AB7),
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _gradesRef.snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -202,7 +183,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                             ),
                             tooltip: l10n.delete,
                             onPressed: () =>
-                                _removeStudent(studentId, studentName),
+                                _removeStudent(context, studentId, studentName),
                           ),
                         ],
                       ),

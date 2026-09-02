@@ -40,8 +40,15 @@ class ActivitiesListPage extends StatelessWidget {
             .collection('activities_list')
             .doc(activityId);
 
-        // Fetch subcollection docs to delete them all
-        final gradesSnapshot = await activityRef.collection('grades').get();
+        // Fetch grades subcollection with offline fallback
+        QuerySnapshot gradesSnapshot;
+        try {
+          gradesSnapshot = await activityRef
+              .collection('grades')
+              .get(const GetOptions(source: Source.cache));
+        } catch (_) {
+          gradesSnapshot = await activityRef.collection('grades').get();
+        }
 
         final batch = firestore.batch();
 
@@ -49,9 +56,10 @@ class ActivitiesListPage extends StatelessWidget {
           batch.delete(doc.reference);
         }
 
-        // Delete parent activity
+        // Delete parent card
         batch.delete(activityRef);
 
+        // Batch commit works completely offline
         await batch.commit();
 
         if (context.mounted) {
@@ -146,7 +154,6 @@ class ActivitiesListPage extends StatelessWidget {
             onPressed: () async {
               final titleText = controller.text.trim();
               if (titleText.isNotEmpty) {
-                // Let Firestore auto-generate document IDs to prevent path issues
                 await FirebaseFirestore.instance
                     .collection('activities_list')
                     .add({
@@ -178,16 +185,8 @@ class ActivitiesListPage extends StatelessWidget {
             .collection('activities_list')
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                l10n.errorLoadingData(snapshot.error.toString()),
-                style: const TextStyle(color: Colors.red),
-              ),
-            );
-          }
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
