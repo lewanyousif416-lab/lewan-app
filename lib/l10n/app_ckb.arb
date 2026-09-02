@@ -165,14 +165,7 @@
   "totalNumberOfStudents": "کۆی ژمارەی خوێندکاران",
 
   "languageMenuTooltip": "زمان",
-  "attendanceAnalyticsTitle": "ئاماری ئامادەبوون",
-  "student": "قوتابی",
-  "addCard": "زیادکردنی کارت",
-  "studentName": "ناوی قوتابی",
-  "score": "نمرە",
-  "activeStatus": "چالاک",
-  "inactiveStatus": "ناچالاک",
-  "save": "پاشەکەوتکردن",
-  "cancel": "پاشگەزبوونەوە"
+  "attendanceAnalyticsTitle": "ئاماری ئامادەبوون"
+ 
 
 }

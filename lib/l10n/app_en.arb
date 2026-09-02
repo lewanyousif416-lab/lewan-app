@@ -186,13 +186,6 @@
   "totalNumberOfStudents": "Total Number of Students",
 
   "languageMenuTooltip": "Language",
-  "attendanceAnalyticsTitle": "Attendance Analytics",
-  "student": "Student",
-  "addCard": "Add Card",
-  "studentName": "Student Name",
-  "score": "Score",
-  "activeStatus": "Active",
-  "inactiveStatus": "Inactive",
-  "save": "Save",
-  "cancel": "Cancel"
+  "attendanceAnalyticsTitle": "Attendance Analytics"
+ 
 }
