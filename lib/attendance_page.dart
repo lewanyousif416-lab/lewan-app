@@ -70,43 +70,33 @@ class _AttendancePageState extends State<AttendancePage> {
       final key = _dateKey(friday);
       final dayMap = <String, String>{};
 
+      QuerySnapshot<Map<String, dynamic>> snapshot;
       try {
-        var snapshot = await FirebaseFirestore.instance
+        // Attempt normal fetch (Server + Cache)
+        snapshot = await FirebaseFirestore.instance
             .collection('attendance')
             .doc(key)
             .collection('records')
-            .get(const GetOptions(source: Source.cache));
-
-        if (snapshot.docs.isEmpty) {
-          try {
-            snapshot = await FirebaseFirestore.instance
-                .collection('attendance')
-                .doc(key)
-                .collection('records')
-                .get()
-                .timeout(const Duration(milliseconds: 800));
-          } catch (_) {}
-        }
-
-        for (final doc in snapshot.docs) {
-          final data = doc.data();
-          dayMap[doc.id] = (data['status'] ?? '') as String;
-        }
+            .get();
       } catch (_) {
+        // Fallback directly to local cache when offline
         try {
-          final snapshot = await FirebaseFirestore.instance
+          snapshot = await FirebaseFirestore.instance
               .collection('attendance')
               .doc(key)
               .collection('records')
-              .get()
-              .timeout(const Duration(milliseconds: 800));
-
-          for (final doc in snapshot.docs) {
-            final data = doc.data();
-            dayMap[doc.id] = (data['status'] ?? '') as String;
-          }
+              .get(const GetOptions(source: Source.cache));
         } catch (_) {
-          // Offline or timed out - continue with empty map
+          loaded[key] = {};
+          continue;
+        }
+      }
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final status = (data['status'] ?? '').toString();
+        if (status.isNotEmpty) {
+          dayMap[doc.id] = status;
         }
       }
       loaded[key] = dayMap;
@@ -132,7 +122,6 @@ class _AttendancePageState extends State<AttendancePage> {
   }) async {
     final key = _dateKey(friday);
 
-    // Check if the tapped status is already selected for this student
     final currentSelected = localStatuses[key]?[studentId];
     final isDeselecting = currentSelected == status;
 
@@ -149,26 +138,24 @@ class _AttendancePageState extends State<AttendancePage> {
       }
     });
 
-    // Auto-save immediately to Firestore (or delete record if deselected)
-    try {
-      final docRef = FirebaseFirestore.instance
-          .collection('attendance')
-          .doc(key)
-          .collection('records')
-          .doc(studentId);
+    final docRef = FirebaseFirestore.instance
+        .collection('attendance')
+        .doc(key)
+        .collection('records')
+        .doc(studentId);
 
-      if (isDeselecting) {
-        await docRef.delete();
-      } else {
-        await docRef.set({
-          'studentId': studentId,
-          'name': studentName,
-          'status': status,
-          'updatedAt': DateTime.now().toIso8601String(),
-        });
-      }
-    } catch (_) {
-      // Offline persistence stores it locally
+    if (isDeselecting) {
+      docRef.delete().catchError((_) {});
+    } else {
+      docRef
+          .set({
+            'studentId': studentId,
+            'name': studentName,
+            'status': status,
+            'date': Timestamp.fromDate(friday),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true))
+          .catchError((_) {});
     }
   }
 
@@ -208,8 +195,9 @@ class _AttendancePageState extends State<AttendancePage> {
               'studentId': studentId,
               'name': studentName,
               'status': status,
-              'updatedAt': DateTime.now().toIso8601String(),
-            });
+              'date': Timestamp.fromDate(friday),
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
           }
         }
       }
@@ -267,7 +255,7 @@ class _AttendancePageState extends State<AttendancePage> {
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? color : color.withValues(alpha: 0.12),
+          color: selected ? color : color.withOpacity(0.12),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: color, width: selected ? 0 : 1),
         ),
@@ -311,9 +299,9 @@ class _AttendancePageState extends State<AttendancePage> {
         margin: const EdgeInsets.only(right: 8, bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.4)),
+          border: Border.all(color: color.withOpacity(0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

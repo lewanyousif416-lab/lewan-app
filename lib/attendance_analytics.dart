@@ -30,16 +30,36 @@ class AttendanceAnalyticsPage extends StatefulWidget {
 class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
   DateTime selectedMonth = DateTime.now();
 
-  Future<List<StudentAttendanceModel>> _fetchMonthlyAttendance() async {
-    final yearStr = selectedMonth.year.toString();
-    final paddedMonthStr = selectedMonth.month.toString().padLeft(2, '0');
+  List<DateTime> _getFridaysForMonth(DateTime monthDate) {
+    final List<DateTime> fridays = [];
+    final int daysInMonth = DateTime(
+      monthDate.year,
+      monthDate.month + 1,
+      0,
+    ).day;
 
+    for (int day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(monthDate.year, monthDate.month, day);
+      if (date.weekday == DateTime.friday) {
+        fridays.add(date);
+      }
+    }
+    return fridays;
+  }
+
+  String _formatDateKey(DateTime date) {
+    final mm = date.month.toString().padLeft(2, '0');
+    final dd = date.day.toString().padLeft(2, '0');
+    return "${date.year}-$mm-$dd";
+  }
+
+  Future<List<StudentAttendanceModel>> _fetchMonthlyAttendance() async {
     Map<String, int> attendedMap = {};
     Map<String, String> namesMap = {};
-    Set<String> uniqueDatesInMonth = {};
     Set<String> allStudentIds = {};
+    Set<String> datesWithRecords = {};
 
-    // 1. Fetch all registered students (Server first, fallback to Cache offline)
+    // 1. Fetch registered students (Server first, fallback to offline cache)
     try {
       QuerySnapshot<Map<String, dynamic>> studentsSnapshot;
       try {
@@ -55,75 +75,50 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
       for (var doc in studentsSnapshot.docs) {
         final sData = doc.data();
         final studentId = doc.id;
-        namesMap[studentId] = sData['name'] ?? 'Unnamed';
+        namesMap[studentId] = (sData['name'] ?? 'Unnamed').toString();
         allStudentIds.add(studentId);
         attendedMap[studentId] = 0;
       }
     } catch (_) {}
 
-    // 2. Fetch all attendance records (Server first, fallback to Cache offline)
-    List<QueryDocumentSnapshot> docsList = [];
-    try {
-      QuerySnapshot groupSnap;
+    // 2. Fetch attendance records directly per date (Guarantees local cache reads offline)
+    final fridays = _getFridaysForMonth(selectedMonth);
+
+    for (final friday in fridays) {
+      final dateKey = _formatDateKey(friday);
+
+      QuerySnapshot<Map<String, dynamic>> snapshot;
       try {
-        groupSnap = await FirebaseFirestore.instance
-            .collectionGroup('records')
+        snapshot = await FirebaseFirestore.instance
+            .collection('attendance')
+            .doc(dateKey)
+            .collection('records')
             .get();
       } catch (_) {
-        groupSnap = await FirebaseFirestore.instance
-            .collectionGroup('records')
-            .get(const GetOptions(source: Source.cache));
-      }
-      docsList = groupSnap.docs;
-    } catch (_) {}
-
-    for (var doc in docsList) {
-      final data = doc.data() as Map<String, dynamic>;
-      bool isCurrentSelectedMonth = false;
-      DateTime? recordDate;
-
-      if (data['date'] is Timestamp) {
-        recordDate = (data['date'] as Timestamp).toDate();
-        if (recordDate.year == selectedMonth.year &&
-            recordDate.month == selectedMonth.month) {
-          isCurrentSelectedMonth = true;
-        }
-      } else {
-        final pathSegments = doc.reference.path.split('/');
-        for (var segment in pathSegments) {
-          if (segment.startsWith("$yearStr-$paddedMonthStr-") ||
-              segment.startsWith("$yearStr-${selectedMonth.month}-")) {
-            isCurrentSelectedMonth = true;
-            try {
-              List<String> parts = segment.split('-');
-              if (parts.length >= 3) {
-                recordDate = DateTime(
-                  int.parse(parts[0]),
-                  int.parse(parts[1]),
-                  int.parse(parts[2]),
-                );
-              }
-            } catch (_) {}
-            break;
-          }
+        try {
+          snapshot = await FirebaseFirestore.instance
+              .collection('attendance')
+              .doc(dateKey)
+              .collection('records')
+              .get(const GetOptions(source: Source.cache));
+        } catch (_) {
+          continue;
         }
       }
 
-      if (isCurrentSelectedMonth) {
-        String dateKey = recordDate != null
-            ? "${recordDate.year}-${recordDate.month}-${recordDate.day}"
-            : doc.reference.path.split('/')[1];
+      if (snapshot.docs.isNotEmpty) {
+        datesWithRecords.add(dateKey);
+      }
 
-        uniqueDatesInMonth.add(dateKey);
-
-        final studentId = data['studentId']?.toString() ?? doc.id;
-        final status = data['status']?.toString().toLowerCase() ?? '';
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final studentId = (data['studentId'] ?? doc.id).toString();
         final name = data['name']?.toString();
+        final status = (data['status'] ?? '').toString().toLowerCase();
 
         if (name != null && name.isNotEmpty) {
           namesMap[studentId] = name;
         }
-
         allStudentIds.add(studentId);
 
         if (status == 'present' || status == '1' || status == 'true') {
@@ -132,8 +127,9 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
       }
     }
 
-    int totalLessonsInMonth = uniqueDatesInMonth.length;
+    int totalLessonsInMonth = datesWithRecords.length;
 
+    // Fallback if no specific dates were recorded
     if (totalLessonsInMonth == 0 && attendedMap.isNotEmpty) {
       totalLessonsInMonth = attendedMap.values.fold(
         0,
@@ -172,7 +168,6 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
       appBar: AppBar(title: Text(l10n.attendanceAnalyticsTitle)),
       body: Column(
         children: [
-          // Month Selector Header
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Row(
@@ -229,11 +224,7 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
                 }
 
                 final data = snapshot.data!;
-
-                // Get highest percentage score
                 final double topPercentage = data.first.percentage;
-
-                // Collect all students who tied for top score
                 final topStudents = data
                     .where((student) => student.percentage == topPercentage)
                     .toList();
@@ -251,9 +242,7 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
                             children: [
                               Text(
                                 isKurdish
-                                    ? (topStudents.length > 1
-                                          ? 'بەرزترین ڕێژەی ئامادەبوون'
-                                          : 'بەرزترین ڕێژەی ئامادەبوون')
+                                    ? 'بەرزترین ڕێژەی ئامادەبوون'
                                     : (topStudents.length > 1
                                           ? 'Most Attended Students'
                                           : 'Most Attended Student'),
@@ -263,7 +252,6 @@ class _AttendanceAnalyticsPageState extends State<AttendanceAnalyticsPage> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              // Displays all top students separated by comma
                               Text(
                                 '${topStudents.map((s) => s.studentName).join(', ')}: ${topPercentage.toStringAsFixed(1)}%',
                                 textAlign: TextAlign.center,
