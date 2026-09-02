@@ -39,7 +39,18 @@ class ActivitiesListPage extends StatelessWidget {
             .collection('activities_list')
             .doc(activityId);
 
-        await activityRef.delete();
+        final batch = FirebaseFirestore.instance.batch();
+
+        // Fetch and delete all documents inside the grades subcollection
+        final gradesSnapshot = await activityRef.collection('grades').get();
+        for (var gradeDoc in gradesSnapshot.docs) {
+          batch.delete(gradeDoc.reference);
+        }
+
+        // Delete the parent activity document
+        batch.delete(activityRef);
+
+        await batch.commit();
 
         if (context.mounted) {
           ScaffoldMessenger.of(
@@ -112,7 +123,13 @@ class ActivitiesListPage extends StatelessWidget {
                         .set(gradeDoc.data());
                   }
 
-                  await oldDocRef.delete();
+                  // Delete old activity doc and its subcollection items
+                  final batch = firestore.batch();
+                  for (var gradeDoc in gradesSnapshot.docs) {
+                    batch.delete(gradeDoc.reference);
+                  }
+                  batch.delete(oldDocRef);
+                  await batch.commit();
                 }
 
                 if (context.mounted) Navigator.pop(context);
@@ -133,7 +150,7 @@ class ActivitiesListPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.activitiesTitle),
-        backgroundColor: const Color(0xFF673AB7), // Deep Purple 500
+        backgroundColor: const Color(0xFF673AB7),
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
