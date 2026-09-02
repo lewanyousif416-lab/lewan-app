@@ -495,22 +495,4 @@ class AppLocalizationsCkb extends AppLocalizations {
 
   @override
   String get attendanceAnalyticsTitle => 'ئاماری ئامادەبوون';
-
-  @override
-  String get student => 'قوتابی';
-
-  @override
-  String get addCard => 'زیادکردنی کارت';
-
-  @override
-  String get studentName => 'ناوی قوتابی';
-
-  @override
-  String get score => 'نمرە';
-
-  @override
-  String get activeStatus => 'چالاک';
-
-  @override
-  String get inactiveStatus => 'ناچالاک';
 }

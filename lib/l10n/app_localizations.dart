@@ -979,42 +979,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Attendance Analytics'**
   String get attendanceAnalyticsTitle;
-
-  /// No description provided for @student.
-  ///
-  /// In en, this message translates to:
-  /// **'Student'**
-  String get student;
-
-  /// No description provided for @addCard.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Card'**
-  String get addCard;
-
-  /// No description provided for @studentName.
-  ///
-  /// In en, this message translates to:
-  /// **'Student Name'**
-  String get studentName;
-
-  /// No description provided for @score.
-  ///
-  /// In en, this message translates to:
-  /// **'Score'**
-  String get score;
-
-  /// No description provided for @activeStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Active'**
-  String get activeStatus;
-
-  /// No description provided for @inactiveStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Inactive'**
-  String get inactiveStatus;
 }
 
 class _AppLocalizationsDelegate

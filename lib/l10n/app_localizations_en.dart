@@ -495,22 +495,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attendanceAnalyticsTitle => 'Attendance Analytics';
-
-  @override
-  String get student => 'Student';
-
-  @override
-  String get addCard => 'Add Card';
-
-  @override
-  String get studentName => 'Student Name';
-
-  @override
-  String get score => 'Score';
-
-  @override
-  String get activeStatus => 'Active';
-
-  @override
-  String get inactiveStatus => 'Inactive';
 }
