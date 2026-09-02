@@ -5,8 +5,8 @@ import 'l10n/app_localizations.dart';
 
 class PaymentDetailPage extends StatefulWidget {
   final PaymentPeriodType periodType;
-  final String periodId; // e.g. "2026-W03" or "2026-01"
-  final String periodLabel; // e.g. "Week 3" or "January"
+  final String periodId;
+  final String periodLabel;
 
   const PaymentDetailPage({
     super.key,
@@ -19,24 +19,7 @@ class PaymentDetailPage extends StatefulWidget {
   State<PaymentDetailPage> createState() => _PaymentDetailPageState();
 }
 
-class _PaymentEntry {
-  final String name;
-  final TextEditingController priceController;
-  bool paid;
-
-  _PaymentEntry({
-    required this.name,
-    required this.priceController,
-    required this.paid,
-  });
-}
-
 class _PaymentDetailPageState extends State<PaymentDetailPage> {
-  final Map<String, _PaymentEntry> entries = {};
-
-  bool loading = true;
-  bool saving = false;
-
   String get _collectionName => widget.periodType == PaymentPeriodType.weekly
       ? 'weeklyPayments'
       : 'monthlyPayments';
@@ -45,73 +28,30 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
       .collection(_collectionName)
       .doc(widget.periodId);
 
-  @override
-  void initState() {
-    super.initState();
-    _loadExisting();
-  }
-
-  Future<void> _loadExisting() async {
-    QuerySnapshot snapshot;
-    try {
-      snapshot = await _periodRef
-          .collection('records')
-          .get(const GetOptions(source: Source.cache));
-    } catch (_) {
-      try {
-        snapshot = await _periodRef
-            .collection('records')
-            .get()
-            .timeout(const Duration(milliseconds: 1000));
-      } catch (_) {
-        if (mounted) setState(() => loading = false);
-        return;
-      }
-    }
-
-    for (final doc in snapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      entries[doc.id] = _PaymentEntry(
-        name: (data['name'] ?? 'Unknown') as String,
-        priceController: TextEditingController(
-          text: (data['amount'] ?? '').toString(),
-        ),
-        paid: (data['status'] ?? 'unpaid') == 'paid',
-      );
-    }
-
-    if (mounted) {
-      setState(() => loading = false);
-    }
-  }
-
-  Future<void> _openAddStudentDialog() async {
+  Future<void> _openAddStudentDialog(
+    List<QueryDocumentSnapshot> currentRecords,
+  ) async {
     final l10n = AppLocalizations.of(context)!;
+
+    // Existing record IDs currently in this period
+    final existingIds = currentRecords.map((d) => d.id).toSet();
+
     QuerySnapshot studentsSnapshot;
     try {
       studentsSnapshot = await FirebaseFirestore.instance
           .collection('students')
           .orderBy('name')
-          .get(const GetOptions(source: Source.cache));
+          .get();
     } catch (_) {
-      try {
-        studentsSnapshot = await FirebaseFirestore.instance
-            .collection('students')
-            .orderBy('name')
-            .get()
-            .timeout(const Duration(milliseconds: 1000));
-      } catch (_) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.noStudentsFound)),
-        );
-        return;
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.noStudentsFound)));
+      return;
     }
 
-    // Only offer students not already added to this period.
     final available = studentsSnapshot.docs
-        .where((doc) => !entries.containsKey(doc.id))
+        .where((doc) => !existingIds.contains(doc.id))
         .toList();
 
     if (!mounted) return;
@@ -123,7 +63,6 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
       return;
     }
 
-    // Keep track of selected student document IDs
     final Set<String> selectedIds = {};
 
     await showModalBottomSheet<void>(
@@ -163,7 +102,6 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                           itemCount: available.length,
                           itemBuilder: (context, index) {
                             final doc = available[index];
-                            // ignore: unnecessary_cast
                             final data = doc.data() as Map<String, dynamic>;
                             final name = (data['name'] ?? 'Unknown') as String;
                             final isSelected = selectedIds.contains(doc.id);
@@ -209,9 +147,7 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
                             ),
                             onPressed: selectedIds.isEmpty
                                 ? null
-                                : () {
-                                    Navigator.pop(context);
-                                  },
+                                : () => Navigator.pop(context),
                             child: Text(
                               l10n.addSelected(selectedIds.length),
                               style: const TextStyle(
@@ -234,35 +170,33 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
 
     if (selectedIds.isEmpty) return;
 
-    // Add all selected students into the entries map
-    setState(() {
-      for (final doc in available) {
-        if (selectedIds.contains(doc.id)) {
-          // ignore: unnecessary_cast
-          final data = doc.data() as Map<String, dynamic>;
-          final name = (data['name'] ?? 'Unknown') as String;
+    // Immediately add selected students to Firestore
+    final batch = FirebaseFirestore.instance.batch();
+    for (final doc in available) {
+      if (selectedIds.contains(doc.id)) {
+        final data = doc.data() as Map<String, dynamic>;
+        final name = (data['name'] ?? 'Unknown') as String;
 
-          entries[doc.id] = _PaymentEntry(
-            name: name,
-            priceController: TextEditingController(),
-            paid: false,
-          );
-        }
+        final docRef = _periodRef.collection('records').doc(doc.id);
+        batch.set(docRef, {
+          'name': name,
+          'amount': 0,
+          'status': 'unpaid',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
       }
-    });
+    }
+    await batch.commit();
   }
 
-  Future<void> _removeStudent(String studentId) async {
+  Future<void> _removeStudent(String studentId, String studentName) async {
     final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.removeStudentTitle),
         content: Text(
-          l10n.removeStudentContent(
-            entries[studentId]?.name ?? '',
-            widget.periodLabel,
-          ),
+          l10n.removeStudentContent(studentName, widget.periodLabel),
         ),
         actions: [
           TextButton(
@@ -270,8 +204,12 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
             child: Text(l10n.cancel),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.delete),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -279,278 +217,197 @@ class _PaymentDetailPageState extends State<PaymentDetailPage> {
 
     if (confirm != true) return;
 
-    try {
-      await _periodRef.collection('records').doc(studentId).delete();
-    } catch (_) {}
-
-    setState(() {
-      entries.remove(studentId);
-    });
+    // Direct deletion from Firestore works completely offline
+    await _periodRef.collection('records').doc(studentId).delete();
   }
 
-  Future<void> _saveAll() async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() => saving = true);
-
-    try {
-      final batch = FirebaseFirestore.instance.batch();
-
-      for (final entry in entries.entries) {
-        final studentId = entry.key;
-        final paymentEntry = entry.value;
-
-        final amountText = paymentEntry.priceController.text.trim();
-        final amount = double.tryParse(amountText) ?? 0;
-
-        final docRef = _periodRef.collection('records').doc(studentId);
-
-        batch.set(docRef, {
-          'name': paymentEntry.name,
-          'amount': amount,
-          'status': paymentEntry.paid ? 'paid' : 'unpaid',
-          'updatedAt': DateTime.now().toIso8601String(),
-        });
-      }
-
-      await batch.commit();
-
-      setState(() => saving = false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.paymentsSaved)));
-      }
-    } catch (e) {
-      setState(() => saving = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToSave(e.toString()))),
-        );
-      }
-    }
+  Future<void> _updateStudentStatus(String studentId, bool paid) async {
+    await _periodRef.collection('records').doc(studentId).set({
+      'status': paid ? 'paid' : 'unpaid',
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
-  @override
-  void dispose() {
-    for (final entry in entries.values) {
-      entry.priceController.dispose();
-    }
-    super.dispose();
+  Future<void> _updateStudentAmount(String studentId, String text) async {
+    final amount = double.tryParse(text.trim()) ?? 0;
+    await _periodRef.collection('records').doc(studentId).set({
+      'amount': amount,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final studentIds = entries.keys.toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.periodLabel),
-        backgroundColor: const Color(0xFF673AB7),
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_add, color: Colors.white),
-            tooltip: l10n.addStudentsButton,
-            onPressed: loading ? null : _openAddStudentDialog,
+    return StreamBuilder<QuerySnapshot>(
+      stream: _periodRef.collection('records').snapshots(),
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ?? [];
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.periodLabel),
+            backgroundColor: const Color(0xFF673AB7),
+            foregroundColor: Colors.white,
+            iconTheme: const IconThemeData(color: Colors.white),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.person_add, color: Colors.white),
+                tooltip: l10n.addStudentsButton,
+                onPressed: () => _openAddStudentDialog(docs),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: studentIds.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.person_add_alt,
-                                size: 50,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                l10n.noStudentsAddedYet,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              const SizedBox(height: 8),
-                              TextButton.icon(
-                                onPressed: _openAddStudentDialog,
-                                icon: const Icon(Icons.person_add),
-                                label: Text(l10n.addStudentsButton),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: studentIds.length,
-                          itemBuilder: (context, index) {
-                            final studentId = studentIds[index];
-                            final entry = entries[studentId]!;
+          body:
+              snapshot.connectionState == ConnectionState.waiting &&
+                  !snapshot.hasData
+              ? const Center(child: CircularProgressIndicator())
+              : docs.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.person_add_alt,
+                        size: 50,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.noStudentsAddedYet,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () => _openAddStudentDialog(docs),
+                        icon: const Icon(Icons.person_add),
+                        label: Text(l10n.addStudentsButton),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final doc = docs[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final studentId = doc.id;
+                    final name = (data['name'] ?? 'Unknown') as String;
+                    final amount = (data['amount'] ?? 0).toString();
+                    final bool paid = (data['status'] ?? 'unpaid') == 'paid';
 
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 14),
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(14),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            entry.name,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.close,
-                                            color: Colors.grey,
-                                            size: 20,
-                                          ),
-                                          onPressed: () =>
-                                              _removeStudent(studentId),
-                                          tooltip: l10n.delete,
-                                        ),
-                                      ],
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextField(
-                                            controller: entry.priceController,
-                                            keyboardType:
-                                                const TextInputType.numberWithOptions(
-                                                  decimal: true,
-                                                ),
-                                            decoration: InputDecoration(
-                                              labelText: l10n.priceLabel,
-                                              border:
-                                                  const OutlineInputBorder(),
-                                              isDense: true,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              entry.paid = !entry.paid;
-                                            });
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 12,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: entry.paid
-                                                  ? Colors.green
-                                                  : Colors.red.withOpacity(
-                                                      0.12,
-                                                    ),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              border: Border.all(
-                                                color: entry.paid
-                                                    ? Colors.green
-                                                    : Colors.red,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  entry.paid
-                                                      ? Icons.check_circle
-                                                      : Icons.cancel,
-                                                  size: 18,
-                                                  color: entry.paid
-                                                      ? Colors.white
-                                                      : Colors.red,
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  entry.paid
-                                                      ? l10n.paidLabel
-                                                      : l10n.unpaidLabel,
-                                                  style: TextStyle(
-                                                    color: entry.paid
-                                                        ? Colors.white
-                                                        : Colors.red,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-                if (studentIds.isNotEmpty)
-                  SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton.icon(
-                          onPressed: saving ? null : _saveAll,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF673AB7),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: saving
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
                                   ),
-                                )
-                              : const Icon(Icons.save, color: Colors.white),
-                          label: Text(
-                            saving ? l10n.saving : l10n.savePayments,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.grey,
+                                    size: 20,
+                                  ),
+                                  onPressed: () =>
+                                      _removeStudent(studentId, name),
+                                  tooltip: l10n.delete,
+                                ),
+                              ],
                             ),
-                          ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    initialValue: amount == '0' ? '' : amount,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    decoration: InputDecoration(
+                                      labelText: l10n.priceLabel,
+                                      border: const OutlineInputBorder(),
+                                      isDense: true,
+                                    ),
+                                    onChanged: (text) =>
+                                        _updateStudentAmount(studentId, text),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                GestureDetector(
+                                  onTap: () =>
+                                      _updateStudentStatus(studentId, !paid),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: paid
+                                          ? Colors.green
+                                          : Colors.red.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: paid ? Colors.green : Colors.red,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          paid
+                                              ? Icons.check_circle
+                                              : Icons.cancel,
+                                          size: 18,
+                                          color: paid
+                                              ? Colors.white
+                                              : Colors.red,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          paid
+                                              ? l10n.paidLabel
+                                              : l10n.unpaidLabel,
+                                          style: TextStyle(
+                                            color: paid
+                                                ? Colors.white
+                                                : Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ),
-              ],
-            ),
+                    );
+                  },
+                ),
+        );
+      },
     );
   }
 }
