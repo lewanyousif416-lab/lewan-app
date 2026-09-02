@@ -35,19 +35,21 @@ class ActivitiesListPage extends StatelessWidget {
 
     if (confirm == true) {
       try {
-        final activityRef = FirebaseFirestore.instance
+        final firestore = FirebaseFirestore.instance;
+        final activityRef = firestore
             .collection('activities_list')
             .doc(activityId);
 
-        final batch = FirebaseFirestore.instance.batch();
-
-        // Fetch and delete all documents inside the grades subcollection
+        // Fetch subcollection docs to delete them all
         final gradesSnapshot = await activityRef.collection('grades').get();
-        for (var gradeDoc in gradesSnapshot.docs) {
-          batch.delete(gradeDoc.reference);
+
+        final batch = firestore.batch();
+
+        for (var doc in gradesSnapshot.docs) {
+          batch.delete(doc.reference);
         }
 
-        // Delete the parent activity document
+        // Delete parent activity
         batch.delete(activityRef);
 
         await batch.commit();
@@ -99,38 +101,11 @@ class ActivitiesListPage extends StatelessWidget {
               final newTitle = controller.text.trim();
               if (newTitle.isNotEmpty && newTitle != currentTitle) {
                 final firestore = FirebaseFirestore.instance;
-                final oldDocRef = firestore
+                final docRef = firestore
                     .collection('activities_list')
                     .doc(activityId);
-                final newDocRef = firestore
-                    .collection('activities_list')
-                    .doc(newTitle);
 
-                final oldDocSnapshot = await oldDocRef.get();
-                if (oldDocSnapshot.exists) {
-                  final data = oldDocSnapshot.data() as Map<String, dynamic>;
-                  data['title'] = newTitle;
-
-                  await newDocRef.set(data);
-
-                  final gradesSnapshot = await oldDocRef
-                      .collection('grades')
-                      .get();
-                  for (var gradeDoc in gradesSnapshot.docs) {
-                    await newDocRef
-                        .collection('grades')
-                        .doc(gradeDoc.id)
-                        .set(gradeDoc.data());
-                  }
-
-                  // Delete old activity doc and its subcollection items
-                  final batch = firestore.batch();
-                  for (var gradeDoc in gradesSnapshot.docs) {
-                    batch.delete(gradeDoc.reference);
-                  }
-                  batch.delete(oldDocRef);
-                  await batch.commit();
-                }
+                await docRef.update({'title': newTitle});
 
                 if (context.mounted) Navigator.pop(context);
               } else if (context.mounted) {
@@ -138,6 +113,50 @@ class ActivitiesListPage extends StatelessWidget {
               }
             },
             child: Text(l10n.update),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddActivityDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.createActivityCardTitle),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: l10n.cardTitleLabel,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF673AB7),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final titleText = controller.text.trim();
+              if (titleText.isNotEmpty) {
+                // Let Firestore auto-generate document IDs to prevent path issues
+                await FirebaseFirestore.instance
+                    .collection('activities_list')
+                    .add({
+                      'title': titleText,
+                      'createdAt': FieldValue.serverTimestamp(),
+                    });
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: Text(l10n.create),
           ),
         ],
       ),
@@ -157,24 +176,18 @@ class ActivitiesListPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('activities_list')
-            .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  l10n.errorLoadingData(snapshot.error.toString()),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
-                ),
+              child: Text(
+                l10n.errorLoadingData(snapshot.error.toString()),
+                style: const TextStyle(color: Colors.red),
               ),
             );
           }
 
-          if (!snapshot.hasData &&
-              snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -198,7 +211,6 @@ class ActivitiesListPage extends StatelessWidget {
                       color: Colors.grey.shade200,
                       border: Border.all(
                         color: const Color(0xFF673AB7),
-                        style: BorderStyle.solid,
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(12),
@@ -253,13 +265,6 @@ class ActivitiesListPage extends StatelessWidget {
                           color: const Color(0xFF673AB7).withOpacity(0.3),
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,50 +320,6 @@ class ActivitiesListPage extends StatelessWidget {
             },
           );
         },
-      ),
-    );
-  }
-
-  void _showAddActivityDialog(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.createActivityCardTitle),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: l10n.cardTitleLabel,
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF673AB7),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              final titleText = controller.text.trim();
-              if (titleText.isNotEmpty) {
-                await FirebaseFirestore.instance
-                    .collection('activities_list')
-                    .doc(titleText)
-                    .set({
-                      'title': titleText,
-                      'createdAt': DateTime.now().toIso8601String(),
-                    });
-                if (context.mounted) Navigator.pop(context);
-              }
-            },
-            child: Text(l10n.create),
-          ),
-        ],
       ),
     );
   }

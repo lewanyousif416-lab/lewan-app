@@ -97,9 +97,9 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.failedToUpdate(e.toString()))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToUpdate(e.toString()))),
+        );
       }
     } finally {
       if (mounted) setState(() => isSaving = false);
@@ -121,7 +121,10 @@ class _EditDeleteStudentPageState extends State<EditDeleteStudentPage> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.delete, style: const TextStyle(color: Colors.white)),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
