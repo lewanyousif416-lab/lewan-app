@@ -277,90 +277,104 @@ class DashboardPage extends StatelessWidget {
                 return Card(
                   elevation: 4,
                   margin: const EdgeInsets.only(bottom: 15),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFF673AB7),
-                      child: Text(
-                        (student["name"] ?? '?')[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              EditDeleteStudentPage(student: student),
+                        ),
+                      );
+                    },
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFF673AB7),
+                        child: Text(
+                          (student["name"] ?? '?')[0].toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
                         ),
                       ),
-                    ),
-                    title: Text(student["name"] ?? 'Unnamed'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.phoneField(data["phone"]?.toString() ?? '-')),
-                        Text(
-                          l10n.locationField(
-                            data["location"]?.toString() ?? '-',
+                      title: Text(student["name"] ?? 'Unnamed'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.phoneField(data["phone"]?.toString() ?? '-'),
                           ),
-                        ),
-                        Text(l10n.ageField(data["age"]?.toString() ?? '-')),
-                        Text(
-                          l10n.educationField(
-                            data["education"]?.toString() ?? '-',
+                          Text(
+                            l10n.locationField(
+                              data["location"]?.toString() ?? '-',
+                            ),
                           ),
-                        ),
-                        Text(
-                          l10n.statusField(
-                            data["maritalStatus"]?.toString() ?? '-',
+                          Text(l10n.ageField(data["age"]?.toString() ?? '-')),
+                          Text(
+                            l10n.educationField(
+                              data["education"]?.toString() ?? '-',
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.orange),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    EditDeleteStudentPage(student: student),
-                              ),
-                            );
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () async {
-                            bool? confirm = await showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: Text(l10n.deleteStudentTitle),
-                                content: Text(
-                                  l10n.deleteStudentDashboardContent,
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    child: Text(l10n.cancel),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    child: Text(l10n.delete),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                            if (confirm == true && context.mounted) {
-                              await _deleteStudentAndRecords(
+                          Text(
+                            l10n.statusField(
+                              data["maritalStatus"]?.toString() ?? '-',
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.orange),
+                            onPressed: () {
+                              Navigator.push(
                                 context,
-                                student.id,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      EditDeleteStudentPage(student: student),
+                                ),
                               );
-                            }
-                          },
-                        ),
-                      ],
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              bool? confirm = await showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text(l10n.deleteStudentTitle),
+                                  content: Text(
+                                    l10n.deleteStudentDashboardContent,
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: Text(l10n.cancel),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: Text(l10n.delete),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true && context.mounted) {
+                                await _deleteStudentAndRecords(
+                                  context,
+                                  student.id,
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
