@@ -32,17 +32,26 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
     final existingIds = currentDocs.map((d) => d.id).toSet();
 
     QuerySnapshot studentsSnapshot;
+
+    // Cache-first fetch strategy for instant offline support
     try {
       studentsSnapshot = await FirebaseFirestore.instance
           .collection('students')
           .orderBy('name')
-          .get();
+          .get(const GetOptions(source: Source.cache));
+
+      if (studentsSnapshot.docs.isEmpty) {
+        studentsSnapshot = await FirebaseFirestore.instance
+            .collection('students')
+            .orderBy('name')
+            .get();
+      }
     } catch (_) {
       try {
         studentsSnapshot = await FirebaseFirestore.instance
             .collection('students')
             .orderBy('name')
-            .get(const GetOptions(source: Source.cache));
+            .get();
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(
