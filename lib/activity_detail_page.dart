@@ -482,9 +482,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: docs.isEmpty
-                          ? () => _openAddStudentDialog(docs)
-                          : (_isSaving ? null : () => _saveAllGrades(docs)),
+                      onPressed: _isSaving ? null : () => _saveAllGrades(docs),
                       icon: _isSaving
                           ? const SizedBox(
                               height: 20,
@@ -494,14 +492,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                                 color: Colors.white,
                               ),
                             )
-                          : Icon(
-                              docs.isEmpty ? Icons.person_add : Icons.save,
-                              color: Colors.white,
-                            ),
+                          : const Icon(Icons.save, color: Colors.white),
                       label: Text(
-                        docs.isEmpty
-                            ? l10n.addStudentsButton
-                            : (_isSaving ? l10n.saving : l10n.saveAllGrades),
+                        _isSaving ? l10n.saving : l10n.saveAllGrades,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
