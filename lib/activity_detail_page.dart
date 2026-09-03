@@ -172,7 +172,6 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
     if (selectedIds.isEmpty) return;
 
-    // Batch commit works offline immediately in local Firestore cache
     final batch = FirebaseFirestore.instance.batch();
     for (final doc in available) {
       if (selectedIds.contains(doc.id)) {
@@ -229,8 +228,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
       _localScores.remove(studentId);
     });
 
-    // Direct deletion works offline immediately in local Firestore cache
-    _gradesRef.doc(studentId).delete().catchError((_) {});
+    await _gradesRef.doc(studentId).delete();
   }
 
   Future<void> _setStudentScore(
@@ -355,15 +353,15 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
               ),
             ],
           ),
-          body:
-              snapshot.connectionState == ConnectionState.waiting &&
-                  !snapshot.hasData
-              ? const Center(child: CircularProgressIndicator())
-              : docs.isEmpty
-              ? Column(
-                  children: [
-                    Expanded(
-                      child: Center(
+          body: Column(
+            children: [
+              Expanded(
+                child:
+                    snapshot.connectionState == ConnectionState.waiting &&
+                        !snapshot.hasData
+                    ? const Center(child: CircularProgressIndicator())
+                    : docs.isEmpty
+                    ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -375,55 +373,25 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                             const SizedBox(height: 12),
                             Text(
                               l10n.noStudentsAddedYet,
-                              style: const TextStyle(fontSize: 16),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black87,
+                              ),
                             ),
-                            const SizedBox(height: 8),
-                            TextButton.icon(
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF673AB7),
+                                foregroundColor: Colors.white,
+                              ),
                               onPressed: () => _openAddStudentDialog(docs),
                               icon: const Icon(Icons.person_add),
                               label: Text(l10n.addStudentsButton),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                    SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF673AB7),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () => _openAddStudentDialog(docs),
-                            icon: const Icon(
-                              Icons.person_add,
-                              color: Colors.white,
-                            ),
-                            label: Text(
-                              l10n.addStudentsButton,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : Column(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
+                      )
+                    : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
@@ -498,48 +466,53 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                           );
                         },
                       ),
-                    ),
-                    SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF673AB7),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+              ),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF673AB7),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: docs.isEmpty
+                          ? () => _openAddStudentDialog(docs)
+                          : (_isSaving ? null : () => _saveAllGrades(docs)),
+                      icon: _isSaving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
                               ),
+                            )
+                          : Icon(
+                              docs.isEmpty ? Icons.person_add : Icons.save,
+                              color: Colors.white,
                             ),
-                            onPressed: _isSaving
-                                ? null
-                                : () => _saveAllGrades(docs),
-                            icon: _isSaving
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.save, color: Colors.white),
-                            label: Text(
-                              _isSaving ? l10n.saving : l10n.saveAllGrades,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                      label: Text(
+                        docs.isEmpty
+                            ? l10n.addStudentsButton
+                            : (_isSaving ? l10n.saving : l10n.saveAllGrades),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
+              ),
+            ],
+          ),
         );
       },
     );

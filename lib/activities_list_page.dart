@@ -43,11 +43,11 @@ class ActivitiesListPage extends StatelessWidget {
         // Fetch grades subcollection with offline fallback
         QuerySnapshot gradesSnapshot;
         try {
+          gradesSnapshot = await activityRef.collection('grades').get();
+        } catch (_) {
           gradesSnapshot = await activityRef
               .collection('grades')
               .get(const GetOptions(source: Source.cache));
-        } catch (_) {
-          gradesSnapshot = await activityRef.collection('grades').get();
         }
 
         final batch = firestore.batch();
